@@ -79,10 +79,6 @@ public:
    \sa DisableAddon, IsAddonDisabled */
   bool HasDisabledAddons();
 
-  /*! @deprecated only here to allow clean upgrades from earlier pvr versions
-   */
-  bool IsSystemPVRAddonEnabled(const CStdString &addonID);
-
   /*! \brief Mark an addon as broken
    Sets a flag that this addon has been marked as broken in the repository.
    \param addonID id of the addon to mark as broken

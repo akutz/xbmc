@@ -32,12 +32,12 @@
 #include "dialogs/GUIDialogTextViewer.h"
 #include "GUIUserMessages.h"
 #include "guilib/GUIWindowManager.h"
+#include "pvr/PVRManager.h"
 #include "utils/JobManager.h"
 #include "utils/FileOperationJob.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
 #include "addons/AddonInstaller.h"
-#include "Application.h"
 
 #define CONTROL_BTN_INSTALL          6
 #define CONTROL_BTN_ENABLE           7
@@ -49,6 +49,7 @@
 using namespace std;
 using namespace ADDON;
 using namespace XFILE;
+using namespace PVR;
 
 CGUIDialogAddonInfo::CGUIDialogAddonInfo(void)
     : CGUIDialog(WINDOW_DIALOG_ADDON_INFO, "DialogAddonInfo.xml")
@@ -139,7 +140,7 @@ void CGUIDialogAddonInfo::UpdateControls()
     GrabRollbackVersions();
 
   // TODO: System addons should be able to be disabled
-  // TODO: the following line will have to be changed later, when the PVR add-ons are no longer part of our source tree
+  // TODO: the following line will have to be changed later, when the PVR add-ons can be downloaded and installed separately
   bool isPVR = isInstalled && m_localAddon->Type() == ADDON_PVRDLL;
   bool canDisable = isInstalled && (!isSystem || isPVR) && !m_localAddon->IsInUse();
   bool canInstall = !isInstalled && m_item->GetProperty("Addon.Broken").empty();
@@ -214,13 +215,11 @@ void CGUIDialogAddonInfo::OnEnable(bool enable)
   CStdString xbmcPath = CSpecialProtocol::TranslatePath("special://xbmc/addons");
   CAddonDatabase database;
   database.Open();
-//  if (m_localAddon->Type() == ADDON_PVRDLL && m_localAddon->Path().Left(xbmcPath.size()).Equals(xbmcPath))
-//    database.EnableSystemPVRAddon(m_localAddon->ID(), enable);
-//  else
-    database.DisableAddon(m_localAddon->ID(), !enable);
+  database.DisableAddon(m_localAddon->ID(), !enable);
 
-  if (m_localAddon->Type() == ADDON_PVRDLL && enable)
-    g_application.StartPVRManager();
+  // autostart the pvrmanager if it's not running yet.
+  if (m_localAddon->Type() == ADDON_PVRDLL && enable && !g_PVRManager.IsStarted())
+    g_PVRManager.Start();
 
   SetItem(m_item);
   UpdateControls();
