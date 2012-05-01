@@ -127,9 +127,8 @@ extern "C" {
    */
   typedef struct PVR_PROPERTIES
   {
-    int         iClientId;             /*!< @brief (required) database ID of the client */
-    const char *strUserPath;           /*!< @brief (required) path to the user profile */
-    const char *strClientPath;         /*!< @brief (required) path to this add-on */
+    const char *strUserPath;           /*!< @brief path to the user profile */
+    const char *strClientPath;         /*!< @brief path to this add-on */
   } PVR_PROPERTIES;
 
   /*!
@@ -137,8 +136,6 @@ extern "C" {
    */
   typedef struct PVR_ADDON_CAPABILITIES
   {
-    bool bSupportsChannelSettings;      /*!< @brief (optional) true if this add-on supports changing channel settings on the backend */
-    bool bSupportsTimeshift;            /*!< @brief (optional) true if the backend will handle timeshift. false if XBMC should handle it. */
     bool bSupportsEPG;                  /*!< @brief (optional) true if the add-on provides EPG information */
     bool bSupportsTV;                   /*!< @brief (optional) true if this add-on provides TV channels */
     bool bSupportsRadio;                /*!< @brief (optional) true if this add-on supports radio channels */
