@@ -39,6 +39,8 @@ extern "C" {
 }
 #endif
 
+#include "pvr/addons/PVRClient.h"
+
 class CDVDDemuxPVRClient;
 struct PVR_STREAM_PROPERTIES;
 
@@ -104,5 +106,6 @@ protected:
 private:
   void RequestStreams();
   void UpdateStreams(PVR_STREAM_PROPERTIES *props);
+  boost::shared_ptr<PVR::CPVRClient> m_pvrClient;
 };
 

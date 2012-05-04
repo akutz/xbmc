@@ -135,6 +135,8 @@ namespace PVR
 
     bool IsNew(void) const { return m_iChannelId <= 0; }
 
+    bool CanRecord(void) const;
+
     /*!
      * @brief Set the identifier for this channel.
      * @param iDatabaseId The new channel ID

@@ -108,6 +108,6 @@ namespace PVR
     CDateTime m_recordingTime; /*!< start time of the recording */
 
     void UpdatePath(void);
-    void DisplayError(PVR_ERROR err) const;
+    bool DisplayError(PVR_ERROR err) const;
   };
 }

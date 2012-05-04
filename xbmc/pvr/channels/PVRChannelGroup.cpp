@@ -541,13 +541,7 @@ int CPVRChannelGroup::LoadFromDb(bool bCompress /* = false */)
 int CPVRChannelGroup::LoadFromClients(void)
 {
   int iCurSize = size();
-
-  /* get the channels from the backends */
-  PVR_ERROR error;
-  g_PVRClients->GetChannelGroupMembers(this, &error);
-  if (error != PVR_ERROR_NO_ERROR)
-    CLog::Log(LOGWARNING, "PVRChannelGroup - %s - got bad error (%d) on call to GetChannelGroupMembers", __FUNCTION__, error);
-
+  g_PVRClients->GetChannelGroupMembers(this);
   return size() - iCurSize;
 }
 

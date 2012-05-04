@@ -104,7 +104,7 @@ namespace PVR
 
     void UpdateSummary(void);
 
-    void DisplayError(PVR_ERROR err) const;
+    bool DisplayError(PVR_ERROR err) const;
 
     const CStdString &GetStatus() const;
 

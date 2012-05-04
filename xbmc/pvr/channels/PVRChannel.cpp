@@ -36,6 +36,7 @@
 #include "pvr/timers/PVRTimers.h"
 #include "pvr/PVRDatabase.h"
 #include "pvr/PVRManager.h"
+#include "pvr/addons/PVRClients.h"
 
 using namespace XFILE;
 using namespace MUSIC_INFO;
@@ -229,6 +230,12 @@ bool CPVRChannel::Persist(bool bQueueWrite /* = false */)
   }
 
   return bReturn;
+}
+
+bool CPVRChannel::CanRecord(void) const
+{
+  CSingleLock lock(m_critSection);
+  return g_PVRClients->SupportsRecordings(m_iClientId);
 }
 
 bool CPVRChannel::SetChannelID(int iChannelId, bool bSaveInDb /* = false */)

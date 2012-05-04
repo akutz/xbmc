@@ -23,6 +23,8 @@
 #include "addons/Addon.h"
 #include "addons/AddonDll.h"
 #include "addons/DllPVRClient.h"
+#include "pvr/channels/PVRChannel.h"
+#include "pvr/recordings/PVRRecordings.h"
 
 namespace EPG
 {
@@ -31,16 +33,18 @@ namespace EPG
 
 namespace PVR
 {
-  #define PVR_INVALID_CLIENT_ID (-1)
+  #define PVR_INVALID_CLIENT_ID (-2)
+  #define PVR_VIRTUAL_CLIENT_ID (-1)
 
   class CPVRChannelGroup;
   class CPVRChannelGroups;
+  class CPVRClient;
   class CPVRTimers;
   class CPVRTimerInfoTag;
   class CPVRRecordings;
-  class CPVRRecording;
 
-  typedef std::vector<PVR_MENUHOOK> PVR_MENUHOOKS;
+  typedef std::vector<PVR_MENUHOOK>     PVR_MENUHOOKS;
+  typedef boost::shared_ptr<CPVRClient> PVR_CLIENT;
 
   /*!
    * Interface from XBMC to a PVR add-on.
@@ -305,7 +309,7 @@ namespace PVR
     PVR_ERROR UpdateTimer(const CPVRTimerInfoTag &timer);
 
     //@}
-    /** @name PVR live stream methods */
+    /** @name PVR stream methods */
     //@{
 
     /*!
@@ -313,38 +317,45 @@ namespace PVR
      * @param channel The channel to stream.
      * @return True if the stream opened successfully, false otherwise.
      */
-    bool OpenLiveStream(const CPVRChannel &channel);
+    bool OpenStream(const CPVRChannel &channel);
+
+    /*!
+     * @brief Open a recording on the server.
+     * @param recording The recording to open.
+     * @return True if the stream has been opened succesfully, false otherwise.
+     */
+    bool OpenStream(const CPVRRecording &recording);
 
     /*!
      * @brief Close an open live stream.
      */
-    void CloseLiveStream(void);
+    void CloseStream(void);
 
     /*!
-     * @brief Read from an open live stream.
+     * @brief Read from an open stream.
      * @param lpBuf The buffer to store the data in.
      * @param uiBufSize The amount of bytes to read.
      * @return The amount of bytes that were actually read from the stream.
      */
-    int ReadLiveStream(void* lpBuf, int64_t uiBufSize);
+    int ReadStream(void* lpBuf, int64_t uiBufSize);
 
     /*!
-     * @brief Seek in a live stream on a backend that supports timeshifting.
+     * @brief Seek in a stream on the backend.
      * @param iFilePosition The position to seek to.
      * @param iWhence ?
      * @return The new position.
      */
-    int64_t SeekLiveStream(int64_t iFilePosition, int iWhence = SEEK_SET);
+    int64_t SeekStream(int64_t iFilePosition, int iWhence = SEEK_SET);
 
     /*!
      * @return The position in the stream that's currently being read.
      */
-    int64_t PositionLiveStream(void);
+    int64_t GetStreamPosition(void);
 
     /*!
      * @return The total length of the stream that's currently being read.
      */
-    int64_t LengthLiveStream(void);
+    int64_t GetStreamLength(void);
 
     /*!
      * @return The channel number on the server of the live stream that's currently being read.
@@ -373,48 +384,6 @@ namespace PVR
     CStdString GetLiveStreamURL(const CPVRChannel &channel);
 
     //@}
-    /** @name PVR recording stream methods */
-    //@{
-
-    /*!
-     * @brief Open a recording on the server.
-     * @param recording The recording to open.
-     * @return True if the stream has been opened succesfully, false otherwise.
-     */
-    bool OpenRecordedStream(const CPVRRecording &recording);
-
-    /*!
-     * @brief Close an open stream from a recording.
-     */
-    void CloseRecordedStream(void);
-
-    /*!
-     * @brief Read from a recording.
-     * @param lpBuf The buffer to store the data in.
-     * @param uiBufSize The amount of bytes to read.
-     * @return The amount of bytes that were actually read from the stream.
-     */
-    int ReadRecordedStream(void* lpBuf, int64_t uiBufSize);
-
-    /*!
-     * @brief Seek in a recorded stream.
-     * @param iFilePosition The position to seek to.
-     * @param iWhence ?
-     * @return The new position.
-     */
-    int64_t SeekRecordedStream(int64_t iFilePosition, int iWhence = SEEK_SET);
-
-    /*!
-     * @return The position in the stream that's currently being read.
-     */
-    int64_t PositionRecordedStream(void);
-
-    /*!
-     * @return The total length of the stream that's currently being read.
-     */
-    int64_t LengthRecordedStream(void);
-
-    //@}
     /** @name PVR demultiplexer methods */
     //@{
 
@@ -440,6 +409,28 @@ namespace PVR
     DemuxPacket *DemuxRead(void);
 
     //@}
+
+    bool SupportsEPG(void) const;
+    bool SupportsTV(void) const;
+    bool SupportsRadio(void) const;
+    bool SupportsRecordings(void) const;
+    bool SupportsTimers(void) const;
+    bool SupportsChannelGroups(void) const;
+    bool SupportsChannelScan(void) const;
+    bool SupportsRecordingFolders(void) const;
+    bool HandlesInputStream(void) const;
+    bool HandlesDemuxing(void) const;
+
+    bool IsPlayingLiveStream(void) const;
+    bool IsPlayingLiveTV(void) const;
+    bool IsPlayingLiveRadio(void) const;
+    bool IsPlayingEncryptedChannel(void) const;
+    bool IsPlayingRecording(void) const;
+    bool IsPlaying(void) const;
+    bool GetPlayingChannel(CPVRChannel &channel) const;
+    bool GetPlayingRecording(CPVRRecording &recording) const;
+
+    static const char *ToString(const PVR_ERROR error);
 
   private:
     bool                   m_bReadyToUse;          /*!< true if this add-on is connected to the backend, false otherwise */
@@ -493,11 +484,15 @@ namespace PVR
      */
     void WriteClientChannelInfo(const CPVRChannel &xbmcChannel, PVR_CHANNEL &addonChannel);
 
-    static const char *ToString(const PVR_ERROR error);
     bool LogError    (const PVR_ERROR &error,  const char *strMethod);
     void LogException(const std::exception &e, const char *strFunctionName);
     bool CanPlayChannel(const CPVRChannel &channel) const;
 
     CCriticalSection m_critSection;
+
+    bool          m_bIsPlayingTV;
+    CPVRChannel   m_playingChannel;
+    bool          m_bIsPlayingRecording;
+    CPVRRecording m_playingRecording;
   };
 }

@@ -63,9 +63,8 @@ bool CPVRChannelGroups::GetGroupsFromClients(void)
     return true;
 
   /* get new groups from add-ons */
-  PVR_ERROR error;
   CPVRChannelGroups groupsTmp(m_bRadio);
-  g_PVRClients->GetChannelGroups(&groupsTmp, &error);
+  g_PVRClients->GetChannelGroups(&groupsTmp);
   return UpdateGroupsEntries(groupsTmp);
 }
 

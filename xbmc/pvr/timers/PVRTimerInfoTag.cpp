@@ -252,43 +252,30 @@ const CStdString &CPVRTimerInfoTag::GetStatus() const
 
 bool CPVRTimerInfoTag::AddToClient(void)
 {
-  CSingleLock lock(m_critSection);
   UpdateEpgEvent();
-  PVR_ERROR error;
-  if (!g_PVRClients->AddTimer(*this, &error))
-  {
-    DisplayError(error);
-    return false;
-  }
-  else
-    return true;
+  return DisplayError(g_PVRClients->AddTimer(*this));
 }
 
 bool CPVRTimerInfoTag::DeleteFromClient(bool bForce /* = false */)
 {
-  bool bRemoved = false;
-  PVR_ERROR error;
-
-  CSingleLock lock(m_critSection);
-  bRemoved = g_PVRClients->DeleteTimer(*this, bForce, &error);
-  if (!bRemoved && error == PVR_ERROR_RECORDING_RUNNING)
+  PVR_ERROR error = g_PVRClients->DeleteTimer(*this, bForce);
+  if (error == PVR_ERROR_RECORDING_RUNNING && !bForce)
   {
     if (CGUIDialogYesNo::ShowAndGetInput(122,0,19122,0))
-      bRemoved = g_PVRClients->DeleteTimer(*this, true, &error);
+      error = g_PVRClients->DeleteTimer(*this, true);
     else
       return false;
   }
 
-  if (!bRemoved)
-  {
-    DisplayError(error);
+  if (!DisplayError(error))
     return false;
-  }
 
   CEpgInfoTag *epgTag = GetEpgInfoTag();
   if (epgTag)
   {
     epgTag->OnTimerDeleted();
+
+    CSingleLock lock(m_critSection);
     m_iEpgId = -1;
   }
 
@@ -297,18 +284,19 @@ bool CPVRTimerInfoTag::DeleteFromClient(bool bForce /* = false */)
 
 bool CPVRTimerInfoTag::RenameOnClient(const CStdString &strNewName)
 {
-  PVR_ERROR error;
-  CSingleLock lock(m_critSection);
-  m_strTitle.Format("%s", strNewName);
-  if (!g_PVRClients->RenameTimer(*this, m_strTitle, &error))
+  PVR_ERROR error = g_PVRClients->RenameTimer(*this, strNewName);
+  if (error == PVR_ERROR_NOT_IMPLEMENTED)
   {
-    if (error == PVR_ERROR_NOT_IMPLEMENTED)
-      return UpdateOnClient();
-
-    DisplayError(error);
-    return false;
+    CSingleLock lock(m_critSection);
+    m_strTitle.Format("%s", strNewName);
+    return UpdateOnClient();
   }
 
+  if (!DisplayError(error))
+    return false;
+
+  CSingleLock lock(m_critSection);
+  m_strTitle.Format("%s", strNewName);
   return true;
 }
 
@@ -393,20 +381,15 @@ void CPVRTimerInfoTag::UpdateEpgEvent(bool bClear /* = false */)
 
 bool CPVRTimerInfoTag::UpdateOnClient()
 {
-  CSingleLock lock(m_critSection);
   UpdateEpgEvent();
-  PVR_ERROR error;
-  if (!g_PVRClients->UpdateTimer(*this, &error))
-  {
-    DisplayError(error);
-    return false;
-  }
-  else
-    return true;
+  return DisplayError(g_PVRClients->UpdateTimer(*this));
 }
 
-void CPVRTimerInfoTag::DisplayError(PVR_ERROR err) const
+bool CPVRTimerInfoTag::DisplayError(PVR_ERROR err) const
 {
+  if (err == PVR_ERROR_NO_ERROR)
+    return true;
+
   if (err == PVR_ERROR_SERVER_ERROR)
     CGUIDialogOK::ShowAndGetInput(19033,19111,19110,0); /* print info dialog "Server error!" */
   else if (err == PVR_ERROR_NOT_SYNC)
@@ -417,6 +400,8 @@ void CPVRTimerInfoTag::DisplayError(PVR_ERROR err) const
     CGUIDialogOK::ShowAndGetInput(19033,19109,0,19067); /* print info dialog */
   else
     CGUIDialogOK::ShowAndGetInput(19033,19147,19110,0); /* print info dialog "Unknown error!" */
+
+  return false;
 }
 
 void CPVRTimerInfoTag::SetEpgInfoTag(CEpgInfoTag *tag)
@@ -622,6 +607,6 @@ EPG::CEpgInfoTag *CPVRTimerInfoTag::GetEpgInfoTag(void) const
 
 bool CPVRTimerInfoTag::SupportsFolders() const
 {
-  return g_PVRClients->GetAddonCapabilities(m_iClientId).bSupportsRecordingFolders;
+  return g_PVRClients->SupportsRecordingFolders(m_iClientId);
 }
 

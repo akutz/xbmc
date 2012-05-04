@@ -115,7 +115,7 @@ unsigned int CPVRFile::Read(void* buffer, int64_t size)
 
 int64_t CPVRFile::GetLength()
 {
-  return g_PVRManager.IsStarted() ? g_PVRClients->LengthStream() : 0;
+  return g_PVRManager.IsStarted() ? g_PVRClients->GetStreamLength() : 0;
 }
 
 int64_t CPVRFile::Seek(int64_t pos, int whence)
@@ -314,7 +314,7 @@ int CPVRFile::IoControl(EIoControl request, void *param)
   {
     if (!g_PVRManager.IsStarted())
       return 0;
-    else if (g_PVRClients->LengthStream() && g_PVRClients->SeekStream(0, SEEK_CUR) >= 0)
+    else if (g_PVRClients->GetStreamLength() && g_PVRClients->SeekStream(0, SEEK_CUR) >= 0)
       return 1;
     else
       return 0;
