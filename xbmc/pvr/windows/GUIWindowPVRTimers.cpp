@@ -265,20 +265,12 @@ bool CGUIWindowPVRTimers::OnContextButtonRename(CFileItem *item, CONTEXT_BUTTON 
   return bReturn;
 }
 
-void CGUIWindowPVRTimers::Notify(const Observable &obs, const CStdString& msg)
+void CGUIWindowPVRTimers::Notify(Observable *obs, const CStdString& msg)
 {
-  if (msg.Equals("timers"))
-  {
-    if (IsVisible())
-      SetInvalid();
-    else
-      m_bUpdateRequired = true;
-  }
+  if (!IsVisible())
+    m_bUpdateRequired = true;
   else if (msg.Equals("timers-reset"))
-  {
-    if (IsVisible())
-      UpdateData();
-    else
-      m_bUpdateRequired = true;
-  }
+    UpdateData();
+  else
+    SetInvalid();
 }

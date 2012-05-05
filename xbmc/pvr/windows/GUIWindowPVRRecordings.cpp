@@ -210,22 +210,14 @@ void CGUIWindowPVRRecordings::UpdateData(void)
   m_parent->SetLabel(CONTROL_LABELGROUP, "");
 }
 
-void CGUIWindowPVRRecordings::Notify(const Observable &obs, const CStdString& msg)
+void CGUIWindowPVRRecordings::Notify(Observable *obs, const CStdString& msg)
 {
-  if (msg.Equals("recordings") || msg.Equals("timers") || msg.Equals("current-item"))
-  {
-    if (IsVisible())
-      SetInvalid();
-    else
-      m_bUpdateRequired = true;
-  }
+  if (!IsVisible())
+    m_bUpdateRequired = true;
   else if (msg.Equals("recordings-reset") || msg.Equals("timers-reset"))
-  {
-    if (IsVisible())
-      UpdateData();
-    else
-      m_bUpdateRequired = true;
-  }
+    UpdateData();
+  else
+    SetInvalid();
 }
 
 bool CGUIWindowPVRRecordings::OnClickButton(CGUIMessage &message)

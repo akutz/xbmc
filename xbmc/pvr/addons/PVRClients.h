@@ -476,7 +476,7 @@ namespace PVR
 
     //@}
 
-    void Notify(const Observable &obs, const CStdString& msg);
+    void Notify(Observable *obs, const CStdString& msg);
 
     bool GetClient(const CStdString &strId, ADDON::AddonPtr &addon) const;
 

@@ -43,6 +43,7 @@ using namespace PVR;
 using namespace EPG;
 
 CPVRChannelGroup::CPVRChannelGroup(bool bRadio, unsigned int iGroupId, const CStdString &strGroupName) :
+    Observable("PVR channel group"),
     m_bRadio(bRadio),
     m_iGroupType(PVR_GROUP_TYPE_DEFAULT),
     m_iGroupId(iGroupId),
@@ -54,6 +55,7 @@ CPVRChannelGroup::CPVRChannelGroup(bool bRadio, unsigned int iGroupId, const CSt
 }
 
 CPVRChannelGroup::CPVRChannelGroup(bool bRadio) :
+    Observable("PVR channel group"),
     m_bRadio(bRadio),
     m_iGroupType(PVR_GROUP_TYPE_DEFAULT),
     m_iGroupId(-1),
@@ -64,6 +66,7 @@ CPVRChannelGroup::CPVRChannelGroup(bool bRadio) :
 }
 
 CPVRChannelGroup::CPVRChannelGroup(const PVR_CHANNEL_GROUP &group) :
+    Observable("PVR channel group"),
     m_bRadio(group.bIsRadio),
     m_iGroupType(PVR_GROUP_TYPE_DEFAULT),
     m_iGroupId(-1),
@@ -94,7 +97,8 @@ bool CPVRChannelGroup::operator!=(const CPVRChannelGroup &right) const
   return !(*this == right);
 }
 
-CPVRChannelGroup::CPVRChannelGroup(const CPVRChannelGroup &group)
+CPVRChannelGroup::CPVRChannelGroup(const CPVRChannelGroup &group) :
+    Observable("PVR channel group")
 {
   m_bRadio                      = group.m_bRadio;
   m_iGroupType                  = group.m_iGroupType;
@@ -946,28 +950,25 @@ void CPVRChannelGroup::ResetChannelNumbers(void)
     at(iChannelPtr).channel->SetCachedChannelNumber(0);
 }
 
-void CPVRChannelGroup::Notify(const Observable &obs, const CStdString& msg)
+void CPVRChannelGroup::Notify(Observable *obs, const CStdString& msg)
 {
-  if (msg.Equals("settings"))
+  CSingleLock lock(m_critSection);
+  bool bUsingBackendChannelOrder   = g_guiSettings.GetBool("pvrmanager.backendchannelorder");
+  bool bUsingBackendChannelNumbers = g_guiSettings.GetBool("pvrmanager.usebackendchannelnumbers");
+  bool bChannelNumbersChanged      = m_bUsingBackendChannelNumbers != bUsingBackendChannelNumbers;
+  bool bChannelOrderChanged        = m_bUsingBackendChannelOrder != bUsingBackendChannelOrder;
+
+  m_bUsingBackendChannelOrder   = bUsingBackendChannelOrder;
+  m_bUsingBackendChannelNumbers = bUsingBackendChannelNumbers;
+
+  /* check whether this channel group has to be renumbered */
+  if (bChannelOrderChanged || bChannelNumbersChanged)
   {
-    CSingleLock lock(m_critSection);
-    bool bUsingBackendChannelOrder   = g_guiSettings.GetBool("pvrmanager.backendchannelorder");
-    bool bUsingBackendChannelNumbers = g_guiSettings.GetBool("pvrmanager.usebackendchannelnumbers");
-    bool bChannelNumbersChanged      = m_bUsingBackendChannelNumbers != bUsingBackendChannelNumbers;
-    bool bChannelOrderChanged        = m_bUsingBackendChannelOrder != bUsingBackendChannelOrder;
-
-    m_bUsingBackendChannelOrder   = bUsingBackendChannelOrder;
-    m_bUsingBackendChannelNumbers = bUsingBackendChannelNumbers;
-
-    /* check whether this channel group has to be renumbered */
-    if (bChannelOrderChanged || bChannelNumbersChanged)
-    {
-      CLog::Log(LOGDEBUG, "CPVRChannelGroup - %s - renumbering group '%s' to use the backend channel order and/or numbers",
-          __FUNCTION__, m_strGroupName.c_str());
-      SortByClientChannelNumber();
-      Renumber();
-      Persist();
-    }
+    CLog::Log(LOGDEBUG, "CPVRChannelGroup - %s - renumbering group '%s' to use the backend channel order and/or numbers",
+        __FUNCTION__, m_strGroupName.c_str());
+    SortByClientChannelNumber();
+    Renumber();
+    Persist();
   }
 }
 

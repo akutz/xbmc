@@ -41,7 +41,7 @@ namespace PVR
     virtual void GetContextButtons(int itemNumber, CContextButtons &buttons) const;
     virtual bool OnContextButton(int itemNumber, CONTEXT_BUTTON button);
     virtual void UpdateData(void);
-    virtual void Notify(const Observable &obs, const CStdString& msg);
+    virtual void Notify(Observable *obs, const CStdString& msg);
     virtual void SetInvalid(void) { UpdateData(); }
     virtual void UnregisterObservers(void);
     virtual void ResetObservers(void);

@@ -37,6 +37,7 @@
 using namespace PVR;
 
 CPVRRecordings::CPVRRecordings(void) :
+    Observable("PVR recordings"),
     m_bIsUpdating(false),
     m_strDirectoryHistory("pvr://recordings/")
 {

@@ -58,23 +58,14 @@ void CGUIWindowPVRGuide::ResetObservers(void)
   g_EpgContainer.RegisterObserver(this);
 }
 
-void CGUIWindowPVRGuide::Notify(const Observable &obs, const CStdString& msg)
+void CGUIWindowPVRGuide::Notify(Observable *obs, const CStdString& msg)
 {
-  if (msg.Equals("epg"))
-  {
-    /* update the current window if the EPG timeline view is visible */
-    if (IsVisible() && m_iGuideView == GUIDE_VIEW_TIMELINE)
-      UpdateData();
-    else
-      m_bUpdateRequired = true;
-  }
-  else if (msg.Equals("epg-now"))
-  {
-    if (IsVisible() && m_iGuideView != GUIDE_VIEW_TIMELINE)
-      SetInvalid();
-    else
-      m_bUpdateRequired = true;
-  }
+  if (!IsVisible())
+    m_bUpdateRequired = true;
+  else if (m_iGuideView == GUIDE_VIEW_TIMELINE)
+    SetInvalid();
+  else
+    UpdateData();
 }
 
 void CGUIWindowPVRGuide::GetContextButtons(int itemNumber, CContextButtons &buttons) const

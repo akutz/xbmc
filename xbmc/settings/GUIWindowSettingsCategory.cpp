@@ -989,7 +989,7 @@ void CGUIWindowSettingsCategory::UpdateSettings()
   }
 
   g_guiSettings.SetChanged();
-  g_guiSettings.NotifyObservers("settings", true);
+  g_guiSettings.NotifyObservers("settings");
 }
 
 void CGUIWindowSettingsCategory::OnClick(CBaseSettingControl *pSettingControl)

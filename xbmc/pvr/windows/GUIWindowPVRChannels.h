@@ -44,7 +44,7 @@ namespace PVR
     virtual void SetSelectedGroup(CPVRChannelGroup *group);
     virtual CPVRChannelGroup *SelectNextGroup(void);
     virtual void UpdateData(void);
-    virtual void Notify(const Observable &obs, const CStdString& msg);
+    virtual void Notify(Observable *obs, const CStdString& msg);
     virtual void ResetObservers(void);
     virtual void UnregisterObservers(void);
 

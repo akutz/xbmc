@@ -94,7 +94,7 @@ using namespace INFO;
 using namespace EPG;
 
 CGUIInfoManager::CGUIInfoManager(void) :
-    Observable()
+    Observable("GUI info manager")
 {
   m_lastSysHeatInfoTime = -SYSHEATUPDATEINTERVAL;  // make sure we grab CPU temp on the first pass
   m_lastMusicBitrateTime = 0;
@@ -3785,7 +3785,7 @@ void CGUIInfoManager::SetCurrentItem(CFileItem &item)
     SetCurrentMovie(item);
 
   SetChanged();
-  NotifyObservers("current-item", true);
+  NotifyObservers("current-item");
 }
 
 void CGUIInfoManager::SetCurrentAlbumThumb(const CStdString thumbFileName)

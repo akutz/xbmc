@@ -36,7 +36,7 @@ namespace PVR
     virtual bool OnMessage(CGUIMessage& message);
     virtual void OnWindowLoaded();
     virtual void OnWindowUnload();
-    virtual void Notify(const Observable &obs, const CStdString& msg);
+    virtual void Notify(Observable *obs, const CStdString& msg);
 
   protected:
     void CloseOrSelect(unsigned int iItem);

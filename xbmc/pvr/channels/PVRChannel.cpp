@@ -57,7 +57,8 @@ bool CPVRChannel::operator!=(const CPVRChannel &right) const
   return !(*this == right);
 }
 
-CPVRChannel::CPVRChannel(bool bRadio /* = false */)
+CPVRChannel::CPVRChannel(bool bRadio /* = false */) :
+    Observable("PVR Channel")
 {
   m_iChannelId              = -1;
   m_bIsRadio                = bRadio;
@@ -86,7 +87,8 @@ CPVRChannel::CPVRChannel(bool bRadio /* = false */)
   m_iClientEncryptionSystem = -1;
 }
 
-CPVRChannel::CPVRChannel(const PVR_CHANNEL &channel, unsigned int iClientId)
+CPVRChannel::CPVRChannel(const PVR_CHANNEL &channel, unsigned int iClientId) :
+    Observable("PVR Channel")
 {
   m_iChannelId              = -1;
   m_bIsRadio                = channel.bIsRadio;
@@ -118,7 +120,8 @@ CPVRChannel::CPVRChannel(const PVR_CHANNEL &channel, unsigned int iClientId)
   UpdateEncryptionName();
 }
 
-CPVRChannel::CPVRChannel(const CPVRChannel &channel)
+CPVRChannel::CPVRChannel(const CPVRChannel &channel) :
+    Observable("PVR Channel")
 {
   *this = channel;
 }

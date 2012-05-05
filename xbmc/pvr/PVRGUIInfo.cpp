@@ -119,9 +119,9 @@ void CPVRGUIInfo::Stop(void)
     g_PVRTimers->UnregisterObserver(this);
 }
 
-void CPVRGUIInfo::Notify(const Observable &obs, const CStdString& msg)
+void CPVRGUIInfo::Notify(Observable *obs, const CStdString& msg)
 {
-  if (msg.Equals("timers") || msg.Equals("timers-reset"))
+  if (obs == g_PVRTimers)
     UpdateTimersCache();
 }
 

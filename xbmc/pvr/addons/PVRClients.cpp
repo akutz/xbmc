@@ -1117,7 +1117,7 @@ bool CPVRClients::UpdateAddons(void)
   return bReturn;
 }
 
-void CPVRClients::Notify(const Observable &obs, const CStdString& msg)
+void CPVRClients::Notify(Observable *obs, const CStdString& msg)
 {
   UpdateAddons();
   UpdateAndInitialiseClients();

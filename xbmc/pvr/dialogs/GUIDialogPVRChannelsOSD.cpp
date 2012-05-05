@@ -52,8 +52,7 @@ CGUIDialogPVRChannelsOSD::~CGUIDialogPVRChannelsOSD()
 {
   delete m_vecItems;
 
-  if (IsObserving(g_infoManager))
-    g_infoManager.UnregisterObserver(this);
+  g_infoManager.UnregisterObserver(this);
 }
 
 bool CGUIDialogPVRChannelsOSD::OnMessage(CGUIMessage& message)
@@ -111,11 +110,10 @@ bool CGUIDialogPVRChannelsOSD::OnMessage(CGUIMessage& message)
 
 void CGUIDialogPVRChannelsOSD::Update()
 {
+  g_infoManager.RegisterObserver(this);
+
   // lock our display, as this window is rendered from the player thread
   g_graphicsContext.Lock();
-
-  if (!IsObserving(g_infoManager))
-    g_infoManager.RegisterObserver(this);
 
   m_viewControl.SetCurrentView(DEFAULT_VIEW_LIST);
 
@@ -231,12 +229,9 @@ CGUIControl *CGUIDialogPVRChannelsOSD::GetFirstFocusableControl(int id)
   return CGUIWindow::GetFirstFocusableControl(id);
 }
 
-void CGUIDialogPVRChannelsOSD::Notify(const Observable &obs, const CStdString& msg)
+void CGUIDialogPVRChannelsOSD::Notify(Observable *obs, const CStdString& msg)
 {
-  if (msg.Equals("current-item"))
-  {
-    g_graphicsContext.Lock();
-    m_viewControl.SetItems(*m_vecItems);
-    g_graphicsContext.Unlock();
-  }
+  g_graphicsContext.Lock();
+  m_viewControl.SetItems(*m_vecItems);
+  g_graphicsContext.Unlock();
 }

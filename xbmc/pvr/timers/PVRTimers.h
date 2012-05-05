@@ -181,7 +181,7 @@ namespace PVR
     CPVRTimerInfoTag *GetByClient(int iClientId, int iClientTimerId);
     CPVRTimerInfoTag *GetMatch(const EPG::CEpgInfoTag *Epg);
     CPVRTimerInfoTag *GetMatch(const CFileItem *item);
-    virtual void Notify(const Observable &obs, const CStdString& msg);
+    virtual void Notify(Observable *obs, const CStdString& msg);
     bool IsRecordingOnChannel(const CPVRChannel &channel) const;
 
   private:

@@ -194,7 +194,8 @@ bool CAddonMgr::CheckUserDirs(const cp_cfg_element_t *settings)
   return true;
 }
 
-CAddonMgr::CAddonMgr()
+CAddonMgr::CAddonMgr() :
+    Observable("Addon Manager")
 {
   m_cpluff = NULL;
 }

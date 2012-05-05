@@ -39,7 +39,8 @@ using namespace std;
 using namespace PVR;
 using namespace EPG;
 
-CPVRTimers::CPVRTimers(void)
+CPVRTimers::CPVRTimers(void) :
+    Observable("PVR timers")
 {
   m_bIsUpdating = false;
 }
@@ -223,7 +224,7 @@ bool CPVRTimers::UpdateEntries(CPVRTimers *timers)
     SetChanged();
     lock.Leave();
 
-    NotifyObservers(bAddedOrDeleted ? "timers-reset" : "timers", false);
+    NotifyObservers(bAddedOrDeleted ? "timers-reset" : "timers");
 
     if (g_guiSettings.GetBool("pvrrecord.timernotifications"))
     {
@@ -709,9 +710,9 @@ CPVRTimerInfoTag *CPVRTimers::GetMatch(const CFileItem *item)
   return returnTag;
 }
 
-void CPVRTimers::Notify(const Observable &obs, const CStdString& msg)
+void CPVRTimers::Notify(Observable *obs, const CStdString& msg)
 {
-  if (msg.Equals("epg"))
+  if (obs == &g_EpgContainer)
     g_PVRManager.TriggerTimersUpdate();
 }
 

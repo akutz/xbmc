@@ -239,7 +239,8 @@ void CSettingsGroup::GetCategories(vecSettingsCategory &vecCategories)
 }
 
 // Settings are case sensitive
-CGUISettings::CGUISettings(void)
+CGUISettings::CGUISettings(void) :
+    Observable("GUISettings")
 {
 }
 

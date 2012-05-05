@@ -101,7 +101,7 @@ namespace EPG
      * @param obs The observable that sent the update.
      * @param msg The update message.
      */
-    virtual void Notify(const Observable &obs, const CStdString& msg);
+    virtual void Notify(Observable *obs, const CStdString& msg);
 
     /*!
      * @brief Update an entry in this container.

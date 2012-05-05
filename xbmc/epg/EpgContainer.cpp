@@ -44,6 +44,7 @@ using namespace PVR;
 typedef std::map<int, CEpg*>::iterator EPGITR;
 
 CEpgContainer::CEpgContainer(void) :
+    Observable("EPG container"),
     CThread("EPG updater")
 {
   m_progressDialog = NULL;
@@ -111,7 +112,7 @@ void CEpgContainer::Clear(bool bClearDb /* = false */)
   }
 
   SetChanged();
-  NotifyObservers("epg", true);
+  NotifyObservers("epg");
 
   if (bThreadRunning)
     Start();
@@ -140,11 +141,10 @@ bool CEpgContainer::Stop(void)
   return true;
 }
 
-void CEpgContainer::Notify(const Observable &obs, const CStdString& msg)
+void CEpgContainer::Notify(Observable *obs, const CStdString& msg)
 {
   /* settings were updated */
-  if (msg == "settings")
-    LoadSettings();
+  LoadSettings();
 }
 
 void CEpgContainer::LoadFromDB(void)
@@ -517,7 +517,7 @@ bool CEpgContainer::UpdateEPG(bool bOnlyPending /* = false */)
   if (iUpdatedTables > 0)
   {
     SetChanged();
-    NotifyObservers("epg", true);
+    NotifyObservers("epg");
   }
 
   CSingleLock lock(m_critSection);
@@ -610,7 +610,7 @@ bool CEpgContainer::CheckPlayingEvents(void)
     if (bFoundChanges)
     {
       SetChanged();
-      NotifyObservers("epg-now", true);
+      NotifyObservers("epg-now");
     }
 
     /* pvr tags always start on the full minute */

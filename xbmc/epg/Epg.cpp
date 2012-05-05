@@ -40,6 +40,7 @@ using namespace EPG;
 using namespace std;
 
 CEpg::CEpg(int iEpgID, const CStdString &strName /* = "" */, const CStdString &strScraperName /* = "" */, bool bLoadedFromDb /* = false */) :
+    Observable("EPG container"),
     m_bChanged(!bLoadedFromDb),
     m_bTagsChanged(false),
     m_bLoaded(false),
@@ -53,6 +54,7 @@ CEpg::CEpg(int iEpgID, const CStdString &strName /* = "" */, const CStdString &s
 }
 
 CEpg::CEpg(CPVRChannel *channel, bool bLoadedFromDb /* = false */) :
+    Observable("EPG container"),
     m_bChanged(!bLoadedFromDb),
     m_bTagsChanged(false),
     m_bLoaded(false),
@@ -66,6 +68,7 @@ CEpg::CEpg(CPVRChannel *channel, bool bLoadedFromDb /* = false */) :
 }
 
 CEpg::CEpg(void) :
+    Observable("EPG container"),
     m_bChanged(false),
     m_bTagsChanged(false),
     m_bLoaded(false),

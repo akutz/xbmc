@@ -23,10 +23,8 @@
 
 #include "StdString.h"
 #include "threads/CriticalSection.h"
-#include "interfaces/AnnouncementManager.h"
 
 class Observable;
-class ObservableMessageJob;
 
 class Observer
 {
@@ -46,16 +44,16 @@ public:
    * @param obs The observable to check.
    * @return True if this observer is observing the given observable, false otherwise.
    */
-  virtual bool IsObserving(const Observable &obs) const;
+protected:
+  virtual bool IsObserving(Observable *obs) const;
 
   /*!
    * @brief Process a message from an observable.
    * @param obs The observable that sends the message.
    * @param msg The message.
    */
-  virtual void Notify(const Observable &obs, const CStdString& msg) = 0;
+  virtual void Notify(Observable *obs, const CStdString& msg) = 0;
 
-protected:
   /*!
    * @brief Callback to register an observable.
    * @param obs The observable to register.
@@ -72,12 +70,10 @@ protected:
   CCriticalSection          m_obsCritSection;  /*!< mutex */
 };
 
-class Observable : public ANNOUNCEMENT::IAnnouncer
+class Observable
 {
-  friend class ObservableMessageJob;
-
 public:
-  Observable();
+  Observable(const CStdString &strObservableName);
   virtual ~Observable();
   virtual Observable &operator=(const Observable &observable);
 
@@ -101,9 +97,8 @@ public:
   /*!
    * @brief Send a message to all observers when m_bObservableChanged is true.
    * @param strMessage The message to send.
-   * @param bAsync True to send the message async, using the jobmanager.
    */
-  virtual void NotifyObservers(const CStdString& strMessage = "", bool bAsync = false);
+  virtual void NotifyObservers(const CStdString& strMessage = "");
 
   /*!
    * @brief Mark an observable changed.
@@ -111,16 +106,16 @@ public:
    */
   virtual void SetChanged(bool bSetTo = true);
 
+  CStdString GetObservableName(void) const { return m_strObservableName; };
+
+protected:
   /*!
    * @brief Check whether this observable is being observed by an observer.
    * @param obs The observer to check.
    * @return True if this observable is being observed by the given observer, false otherwise.
    */
-  virtual bool IsObserving(const Observer &obs) const;
+  virtual bool IsObserving(Observer *obs) const;
 
-  virtual void Announce(ANNOUNCEMENT::AnnouncementFlag flag, const char *sender, const char *message, const CVariant &data);
-
-protected:
   /*!
    * @brief Send a message to all observer when m_bObservableChanged is true.
    * @param obs The observer that sends the message.
@@ -132,5 +127,5 @@ protected:
   bool                    m_bObservableChanged; /*!< true when the observable is marked as changed, false otherwise */
   std::vector<Observer *> m_observers;          /*!< all observers */
   CCriticalSection        m_obsCritSection;     /*!< mutex */
-  bool                    m_bAsyncAllowed;      /*!< true when async messages are allowed, false otherwise */
+  CStdString              m_strObservableName;  /*!< name of the observable */
 };

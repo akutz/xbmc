@@ -228,7 +228,7 @@ namespace PVR
 
     virtual void ResetChannelNumbers(void);
 
-    virtual void Notify(const Observable &obs, const CStdString& msg);
+    virtual void Notify(Observable *obs, const CStdString& msg);
 
     /*! @name getters
      */

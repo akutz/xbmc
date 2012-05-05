@@ -161,22 +161,14 @@ void CGUIWindowPVRChannels::SetSelectedGroup(CPVRChannelGroup *group)
   g_PVRManager.SetPlayingGroup(m_selectedGroup);
 }
 
-void CGUIWindowPVRChannels::Notify(const Observable &obs, const CStdString& msg)
+void CGUIWindowPVRChannels::Notify(Observable *obs, const CStdString& msg)
 {
-  if (msg.Equals("channelgroup") || msg.Equals("timers-reset") || msg.Equals("timers") || msg.Equals("epg-current-event") || msg.Equals("current-item"))
-  {
-    if (IsVisible())
-      SetInvalid();
-    else
-      m_bUpdateRequired = true;
-  }
+  if (!IsVisible())
+    m_bUpdateRequired = true;
   else if (msg.Equals("channelgroup-reset"))
-  {
-    if (IsVisible())
-      UpdateData();
-    else
-      m_bUpdateRequired = true;
-  }
+    UpdateData();
+  else
+    SetInvalid();
 }
 
 CPVRChannelGroup *CGUIWindowPVRChannels::SelectNextGroup(void)

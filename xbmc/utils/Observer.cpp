@@ -22,24 +22,8 @@
 #include "Application.h"
 #include "Observer.h"
 #include "threads/SingleLock.h"
-#include "utils/JobManager.h"
 
 using namespace std;
-using namespace ANNOUNCEMENT;
-
-class ObservableMessageJob : public CJob
-{
-private:
-  Observable              m_observable;
-  std::vector<Observer *> m_observers;
-  CStdString              m_strMessage;
-public:
-  ObservableMessageJob(const Observable &obs, const CStdString &strMessage);
-  virtual ~ObservableMessageJob() {}
-  virtual const char *GetType() const { return "observable-message-job"; }
-
-  virtual bool DoWork();
-};
 
 Observer::~Observer(void)
 {
@@ -54,16 +38,16 @@ void Observer::StopObserving(void)
   m_observables.clear();
 }
 
-bool Observer::IsObserving(const Observable &obs) const
+bool Observer::IsObserving(Observable *obs) const
 {
   CSingleLock lock(m_obsCritSection);
-  return find(m_observables.begin(), m_observables.end(), &obs) != m_observables.end();
+  return find(m_observables.begin(), m_observables.end(), obs) != m_observables.end();
 }
 
 void Observer::RegisterObservable(Observable *obs)
 {
   CSingleLock lock(m_obsCritSection);
-  if (!IsObserving(*obs))
+  if (!IsObserving(obs))
     m_observables.push_back(obs);
 }
 
@@ -75,16 +59,14 @@ void Observer::UnregisterObservable(Observable *obs)
     m_observables.erase(it);
 }
 
-Observable::Observable() :
+Observable::Observable(const CStdString &strObservableName) :
     m_bObservableChanged(false),
-    m_bAsyncAllowed(true)
+    m_strObservableName(strObservableName)
 {
-  CAnnouncementManager::AddAnnouncer(this);
 }
 
 Observable::~Observable()
 {
-  CAnnouncementManager::RemoveAnnouncer(this);
   StopObserver();
 }
 
@@ -108,16 +90,16 @@ void Observable::StopObserver(void)
   m_observers.clear();
 }
 
-bool Observable::IsObserving(const Observer &obs) const
+bool Observable::IsObserving(Observer *obs) const
 {
   CSingleLock lock(m_obsCritSection);
-  return find(m_observers.begin(), m_observers.end(), &obs) != m_observers.end();
+  return find(m_observers.begin(), m_observers.end(), obs) != m_observers.end();
 }
 
 void Observable::RegisterObserver(Observer *obs)
 {
   CSingleLock lock(m_obsCritSection);
-  if (!IsObserving(*obs))
+  if (!IsObserving(obs))
   {
     m_observers.push_back(obs);
     obs->RegisterObservable(this);
@@ -135,16 +117,12 @@ void Observable::UnregisterObserver(Observer *obs)
   }
 }
 
-void Observable::NotifyObservers(const CStdString& strMessage /* = "" */, bool bAsync /* = false */)
+void Observable::NotifyObservers(const CStdString& strMessage /* = "" */)
 {
   CSingleLock lock(m_obsCritSection);
   if (m_bObservableChanged && !g_application.m_bStop)
   {
-    if (bAsync && m_bAsyncAllowed)
-      CJobManager::GetInstance().AddJob(new ObservableMessageJob(*this, strMessage), NULL);
-    else
-      SendMessage(this, &m_observers, strMessage);
-
+    SendMessage(this, &m_observers, strMessage);
     m_bObservableChanged = false;
   }
 }
@@ -155,35 +133,12 @@ void Observable::SetChanged(bool SetTo)
   m_bObservableChanged = SetTo;
 }
 
-void Observable::Announce(AnnouncementFlag flag, const char *sender, const char *message, const CVariant &data)
-{
-  if (flag == System && !strcmp(sender, "xbmc") && !strcmp(message, "ApplicationStop"))
-  {
-    CSingleLock lock(m_obsCritSection);
-    m_bAsyncAllowed = false;
-  }
-}
-
 void Observable::SendMessage(Observable *obs, const vector<Observer *> *observers, const CStdString &strMessage)
 {
   for(unsigned int ptr = 0; ptr < observers->size(); ptr++)
   {
     Observer *observer = observers->at(ptr);
     if (observer)
-      observer->Notify(*obs, strMessage);
+      observer->Notify(obs, strMessage);
   }
-}
-
-ObservableMessageJob::ObservableMessageJob(const Observable &obs, const CStdString &strMessage)
-{
-  m_strMessage = strMessage;
-  m_observable = obs;
-  m_observers  = obs.m_observers;
-}
-
-bool ObservableMessageJob::DoWork()
-{
-  Observable::SendMessage(&m_observable, &m_observers, m_strMessage);
-
-  return true;
 }
