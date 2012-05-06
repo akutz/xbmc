@@ -109,7 +109,7 @@ void CPVRRecordings::GetContents(const CStdString &strDirectory, CFileItemList *
     pFileItem->SetPath(current->m_strFileNameAndPath);
 
     // Set the play count either directly from client (if supported) or from video db
-    if (g_PVRClients->GetAddonCapabilities(pFileItem->GetPVRRecordingInfoTag()->m_iClientId).bSupportsRecordingPlayCount)
+    if (g_PVRClients->SupportsRecordingPlaycount(pFileItem->GetPVRRecordingInfoTag()->m_iClientId))
     {
       pFileItem->GetPVRRecordingInfoTag()->m_playCount=pFileItem->GetPVRRecordingInfoTag()->m_iRecPlayCount;
     }
@@ -155,7 +155,7 @@ void CPVRRecordings::GetSubDirectories(const CStdString &strBase, CFileItemList 
 
       // Initialize folder overlay from play count (either directly from client or from video database)
       CVideoDatabase db;
-      bool supportsPlayCount = g_PVRClients->GetAddonCapabilities(current->m_iClientId).bSupportsRecordingPlayCount;
+      bool supportsPlayCount = g_PVRClients->SupportsRecordingPlaycount(current->m_iClientId);
       if ((supportsPlayCount && current->m_iRecPlayCount > 0) ||
           (!supportsPlayCount && db.Open() && db.GetPlayCount(*pFileItem) > 0))
       {
@@ -178,7 +178,7 @@ void CPVRRecordings::GetSubDirectories(const CStdString &strBase, CFileItemList 
       // Unset folder overlay if recording is unwatched
       if (unwatchedFolders.find(strFilePath) == unwatchedFolders.end()) {
         CVideoDatabase db;
-        bool supportsPlayCount = g_PVRClients->GetAddonCapabilities(current->m_iClientId).bSupportsRecordingPlayCount;
+        bool supportsPlayCount = g_PVRClients->SupportsRecordingPlaycount(current->m_iClientId);
         if ((supportsPlayCount && current->m_iRecPlayCount == 0) || (!supportsPlayCount && db.Open() && db.GetPlayCount(*pFileItem) == 0))
         {
           pFileItem->SetOverlayImage(CGUIListItem::ICON_OVERLAY_UNWATCHED, false);
@@ -431,27 +431,56 @@ void CPVRRecordings::Clear()
   erase(begin(), end());
 }
 
-void CPVRRecordings::UpdateEntry(const CPVRRecording &tag)
+void CPVRRecordings::UpdateFromClient(PVR_CLIENT &client, const PVR_UPDATE_TYPE &updateType, const PVR_RECORDING &recording)
 {
-  bool bFound = false;
-  CSingleLock lock(m_critSection);
+  if (updateType == PVR_UPDATE_NEW || PVR_UPDATE_RESPONSE || PVR_UPDATE_REPLACE)
+  {
+    CSingleLock lock(m_critSection);
+    CPVRRecording *tag = GetByClient(client->GetID(), recording.strRecordingId);
+    if (tag)
+    {
+      tag->Update(CPVRRecording(recording, client->GetID()));
+    }
+    else
+    {
+      tag = new CPVRRecording(recording, client->GetID());
+      push_back(tag);
+    }
+  }
+  else if (updateType == PVR_UPDATE_DELETE)
+  {
+    DeleteRecording(CPVRRecording(recording, client->GetID()));
+  }
+}
 
+CPVRRecording *CPVRRecordings::GetByClient(int iClientId, const char *strRecordingId)
+{
+  CSingleLock lock(m_critSection);
   for (unsigned int iRecordingPtr = 0; iRecordingPtr < size(); iRecordingPtr++)
   {
     CPVRRecording *currentTag = at(iRecordingPtr);
-    if (currentTag->m_iClientId == tag.m_iClientId &&
-        currentTag->m_strRecordingId.Equals(tag.m_strRecordingId))
+    if (currentTag->m_iClientId == iClientId &&
+        currentTag->m_strRecordingId.Equals(strRecordingId))
     {
-      currentTag->Update(tag);
-      bFound = true;
-      break;
+      return at(iRecordingPtr);
     }
   }
+  return NULL;
+}
 
-  if (!bFound)
+bool CPVRRecordings::DeleteRecording(const CPVRRecording &recording)
+{
+  CSingleLock lock(m_critSection);
+  for (unsigned int iRecordingPtr = 0; iRecordingPtr < size(); iRecordingPtr++)
   {
-    CPVRRecording *newTag = new CPVRRecording();
-    newTag->Update(tag);
-    push_back(newTag);
+    CPVRRecording *currentTag = at(iRecordingPtr);
+    if (currentTag->m_iClientId == recording.m_iClientId &&
+        currentTag->m_strRecordingId.Equals(recording.m_strRecordingId))
+    {
+      delete currentTag;
+      erase(begin() + iRecordingPtr);
+      return true;
+    }
   }
+  return false;
 }

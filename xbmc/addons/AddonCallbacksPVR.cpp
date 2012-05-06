@@ -1,5 +1,5 @@
 /*
- *      Copyright (C) 2005-2011 Team XBMC
+ *      Copyright (C) 2005-2012 Team XBMC
  *      http://www.xbmc.org
  *
  *  This Program is free software; you can redistribute it and/or modify
@@ -19,26 +19,19 @@
  *
  */
 
-#include "Application.h"
 #include "AddonCallbacksPVR.h"
-#include "settings/AdvancedSettings.h"
+
 #include "utils/log.h"
 #include "dialogs/GUIDialogKaiToast.h"
-
 #include "epg/Epg.h"
 #include "pvr/PVRManager.h"
 #include "pvr/channels/PVRChannelGroupsContainer.h"
-#include "pvr/channels/PVRChannelGroupInternal.h"
-#include "pvr/addons/PVRClient.h"
-#include "pvr/recordings/PVRRecordings.h"
 #include "pvr/timers/PVRTimers.h"
-#include "pvr/timers/PVRTimerInfoTag.h"
+#include "pvr/addons/PVRClients.h"
 
 using namespace PVR;
 using namespace EPG;
-
-namespace ADDON
-{
+using namespace ADDON;
 
 CAddonCallbacksPVR::CAddonCallbacksPVR(CAddon* addon)
 {
@@ -46,214 +39,34 @@ CAddonCallbacksPVR::CAddonCallbacksPVR(CAddon* addon)
   m_callbacks = new CB_PVRLib;
 
   /* write XBMC PVR specific add-on function addresses to callback table */
-  m_callbacks->TransferEpgEntry           = PVRTransferEpgEntry;
-  m_callbacks->TransferChannelEntry       = PVRTransferChannelEntry;
-  m_callbacks->TransferTimerEntry         = PVRTransferTimerEntry;
-  m_callbacks->TransferRecordingEntry     = PVRTransferRecordingEntry;
-  m_callbacks->AddMenuHook                = PVRAddMenuHook;
-  m_callbacks->Recording                  = PVRRecording;
-  m_callbacks->TriggerChannelUpdate       = PVRTriggerChannelUpdate;
-  m_callbacks->TriggerChannelGroupsUpdate = PVRTriggerChannelGroupsUpdate;
-  m_callbacks->TriggerTimerUpdate         = PVRTriggerTimerUpdate;
-  m_callbacks->TriggerRecordingUpdate     = PVRTriggerRecordingUpdate;
-  m_callbacks->FreeDemuxPacket            = PVRFreeDemuxPacket;
   m_callbacks->AllocateDemuxPacket        = PVRAllocateDemuxPacket;
+  m_callbacks->FreeDemuxPacket            = PVRFreeDemuxPacket;
+  m_callbacks->TransferChannelEntry       = PVRTransferChannelEntry;
   m_callbacks->TransferChannelGroup       = PVRTransferChannelGroup;
   m_callbacks->TransferChannelGroupMember = PVRTransferChannelGroupMember;
+  m_callbacks->TransferEpgEntry           = PVRTransferEpgEntry;
+  m_callbacks->TransferMenuHook           = PVRTransferMenuHook;
+  m_callbacks->TransferRecordingEntry     = PVRTransferRecordingEntry;
+  m_callbacks->TransferTimerEntry         = PVRTransferTimerEntry;
+  m_callbacks->Recording                  = PVRRecording;
 }
 
 CAddonCallbacksPVR::~CAddonCallbacksPVR()
 {
   /* delete the callback table */
-  delete m_callbacks;
+  SAFE_DELETE(m_callbacks);
 }
 
-CPVRClient *CAddonCallbacksPVR::GetPVRClient(void *addonData)
+bool CAddonCallbacksPVR::GetPVRClient(void *addonData, PVR_CLIENT &client)
 {
   CAddonCallbacks *addon = static_cast<CAddonCallbacks *>(addonData);
-  if (!addon || !addon->GetHelperPVR())
+  if (!addon || !addon->GetHelperPVR() || !addon->GetHelperPVR()->m_addon)
   {
     CLog::Log(LOGERROR, "PVR - %s - called with a null pointer", __FUNCTION__);
-    return NULL;
+    return false;
   }
 
-  return dynamic_cast<CPVRClient *>(addon->GetHelperPVR()->m_addon);
-}
-
-void CAddonCallbacksPVR::PVRTransferChannelGroup(void *addonData, const ADDON_HANDLE handle, const PVR_CHANNEL_GROUP *group)
-{
-  CPVRChannelGroups *xbmcGroups = static_cast<CPVRChannelGroups *>(handle->dataAddress);
-  if (!handle || !group || !xbmcGroups)
-  {
-    CLog::Log(LOGERROR, "PVR - %s - invalid handler data", __FUNCTION__);
-    return;
-  }
-
-  if (strlen(group->strGroupName) == 0)
-  {
-    CLog::Log(LOGERROR, "PVR - %s - empty group name", __FUNCTION__);
-    return;
-  }
-
-  /* transfer this entry to the groups container */
-  xbmcGroups->UpdateFromClient(CPVRChannelGroup(*group));
-}
-
-void CAddonCallbacksPVR::PVRTransferChannelGroupMember(void *addonData, const ADDON_HANDLE handle, const PVR_CHANNEL_GROUP_MEMBER *member)
-{
-  CPVRClient *client      = GetPVRClient(addonData);
-  CPVRChannelGroup *group = static_cast<CPVRChannelGroup *>(handle->dataAddress);
-  if (!handle || !member || !client || !group)
-  {
-    CLog::Log(LOGERROR, "PVR - %s - invalid handler data", __FUNCTION__);
-    return;
-  }
-
-  CPVRChannel *channel = g_PVRChannelGroups->GetByUniqueID(member->iChannelUniqueId, client->GetID());
-  if (!channel)
-  {
-    CLog::Log(LOGERROR, "PVR - %s - cannot find group '%s' or channel '%d'", __FUNCTION__, member->strGroupName, member->iChannelUniqueId);
-  }
-  else if (group->IsRadio() == channel->IsRadio())
-  {
-    /* transfer this entry to the group */
-    group->AddToGroup(*channel, member->iChannelNumber, false);
-  }
-}
-
-void CAddonCallbacksPVR::PVRTransferEpgEntry(void *addonData, const ADDON_HANDLE handle, const EPG_TAG *epgentry)
-{
-  CEpg *xbmcEpg = static_cast<CEpg *>(handle->dataAddress);
-  if (!handle || !xbmcEpg)
-  {
-    CLog::Log(LOGERROR, "PVR - %s - invalid handler data", __FUNCTION__);
-    return;
-  }
-
-  /* transfer this entry to the epg */
-  xbmcEpg->UpdateEntry(epgentry, handle->dataIdentifier == 1 /* update db */);
-}
-
-void CAddonCallbacksPVR::PVRTransferChannelEntry(void *addonData, const ADDON_HANDLE handle, const PVR_CHANNEL *channel)
-{
-  CPVRClient *client                     = GetPVRClient(addonData);
-  CPVRChannelGroupInternal *xbmcChannels = static_cast<CPVRChannelGroupInternal *>(handle->dataAddress);
-  if (!handle || !channel || !client || !xbmcChannels)
-  {
-    CLog::Log(LOGERROR, "PVR - %s - invalid handler data", __FUNCTION__);
-    return;
-  }
-
-  /* transfer this entry to the internal channels group */
-  xbmcChannels->UpdateFromClient(CPVRChannel(*channel, client->GetID()));
-}
-
-void CAddonCallbacksPVR::PVRTransferRecordingEntry(void *addonData, const ADDON_HANDLE handle, const PVR_RECORDING *recording)
-{
-  CPVRClient *client             = GetPVRClient(addonData);
-  CPVRRecordings *xbmcRecordings = static_cast<CPVRRecordings *>(handle->dataAddress);
-  if (!handle || !recording || !client || !xbmcRecordings)
-  {
-    CLog::Log(LOGERROR, "PVR - %s - invalid handler data", __FUNCTION__);
-    return;
-  }
-
-  /* transfer this entry to the recordings container */
-  xbmcRecordings->UpdateFromClient(CPVRRecording(*recording, client->GetID()));
-}
-
-void CAddonCallbacksPVR::PVRTransferTimerEntry(void *addonData, const ADDON_HANDLE handle, const PVR_TIMER *timer)
-{
-  CPVRClient *client     = GetPVRClient(addonData);
-  CPVRTimers *xbmcTimers = static_cast<CPVRTimers *>(handle->dataAddress);
-  if (!handle || !timer || !client || !xbmcTimers)
-  {
-    CLog::Log(LOGERROR, "PVR - %s - invalid handler data", __FUNCTION__);
-    return;
-  }
-
-  CPVRChannel *channel = g_PVRChannelGroups->GetByUniqueID(timer->iClientChannelUid, client->GetID());
-  if (!channel)
-  {
-    CLog::Log(LOGERROR, "PVR - %s - cannot find channel %d on client %d", __FUNCTION__, timer->iClientChannelUid, client->GetID());
-    return;
-  }
-
-  /* transfer this entry to the timers container */
-  xbmcTimers->UpdateFromClient(CPVRTimerInfoTag(*timer, channel, client->GetID()));
-}
-
-void CAddonCallbacksPVR::PVRAddMenuHook(void *addonData, PVR_MENUHOOK *hook)
-{
-  CPVRClient *client = GetPVRClient(addonData);
-  if (!hook || !client)
-  {
-    CLog::Log(LOGERROR, "PVR - %s - invalid handler data", __FUNCTION__);
-    return;
-  }
-
-  PVR_MENUHOOKS *hooks = client->GetMenuHooks();
-  if (hooks)
-  {
-    PVR_MENUHOOK hookInt;
-    hookInt.iHookId            = hook->iHookId;
-    hookInt.iLocalizedStringId = hook->iLocalizedStringId;
-
-    /* add this new hook */
-    hooks->push_back(hookInt);
-  }
-}
-
-void CAddonCallbacksPVR::PVRRecording(void *addonData, const char *strName, const char *strFileName, bool bOnOff)
-{
-  CPVRClient *client = GetPVRClient(addonData);
-  if (!client || !strFileName)
-  {
-    CLog::Log(LOGERROR, "PVR - %s - invalid handler data", __FUNCTION__);
-    return;
-  }
-
-  CStdString strLine1;
-  if (bOnOff)
-    strLine1.Format(g_localizeStrings.Get(19197), client->Name());
-  else
-    strLine1.Format(g_localizeStrings.Get(19198), client->Name());
-
-  CStdString strLine2;
-  if (strName)
-    strLine2 = strName;
-  else if (strFileName)
-    strLine2 = strFileName;
-
-  /* display a notification for 5 seconds */
-  CGUIDialogKaiToast::QueueNotification(CGUIDialogKaiToast::Info, strLine1, strLine2, 5000, false);
-
-  CLog::Log(LOGDEBUG, "CAddonCallbacksPVR - %s - recording %s on client '%s'. name='%s' filename='%s'",
-      __FUNCTION__, bOnOff ? "started" : "finished", client->Name().c_str(), strName, strFileName);
-}
-
-void CAddonCallbacksPVR::PVRTriggerChannelUpdate(void *addonData)
-{
-  /* update the channels table in the next iteration of the pvrmanager's main loop */
-  g_PVRManager.TriggerChannelsUpdate();
-}
-
-void CAddonCallbacksPVR::PVRTriggerTimerUpdate(void *addonData)
-{
-  /* update the timers table in the next iteration of the pvrmanager's main loop */
-  g_PVRManager.TriggerTimersUpdate();
-}
-
-void CAddonCallbacksPVR::PVRTriggerRecordingUpdate(void *addonData)
-{
-  /* update the recordings table in the next iteration of the pvrmanager's main loop */
-  g_PVRManager.TriggerRecordingsUpdate();
-}
-
-void CAddonCallbacksPVR::PVRTriggerChannelGroupsUpdate(void *addonData)
-{
-  /* update all channel groups in the next iteration of the pvrmanager's main loop */
-  g_PVRManager.TriggerChannelGroupsUpdate();
+  return g_PVRClients->GetClient(addon->GetHelperPVR()->m_addon->ID(), client);
 }
 
 void CAddonCallbacksPVR::PVRFreeDemuxPacket(void *addonData, DemuxPacket* pPacket)
@@ -266,4 +79,333 @@ DemuxPacket* CAddonCallbacksPVR::PVRAllocateDemuxPacket(void *addonData, int iDa
   return CDVDDemuxUtils::AllocateDemuxPacket(iDataSize);
 }
 
-}; /* namespace ADDON */
+void CAddonCallbacksPVR::PVRTransferChannelEntry(void *addonData, const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const PVR_CHANNEL *channel)
+{
+  PVR_CLIENT client;
+  // validate input
+  if (!addonData || !channel)
+  {
+    CLog::Log(LOGERROR, "PVR - %s - invalid data", __FUNCTION__);
+  }
+  // get the client
+  else if (!GetPVRClient(addonData, client))
+  {
+    CLog::Log(LOGERROR, "PVR - %s - invalid PVR client", __FUNCTION__);
+  }
+  // only process responses when not fully initialised
+  else if (!g_PVRManager.IsStarted() && updateType != PVR_UPDATE_RESPONSE)
+  {
+    return;
+  }
+  else
+  {
+    if (updateType != PVR_UPDATE_RESPONSE)
+      CLog::Log(LOGDEBUG, "PVR - %s - %s channel '%s' (%d)", __FUNCTION__, ToString(updateType), channel->strChannelName, channel->iUniqueId);
+
+    // get the internal channel group
+    CPVRChannelGroupInternal *xbmcGroup(NULL);
+    if (handle && handle->dataAddress)
+      xbmcGroup = static_cast<CPVRChannelGroupInternal *>(handle->dataAddress);
+    else
+      xbmcGroup = g_PVRChannelGroups->GetGroupAll(channel->bIsRadio);
+
+    // update
+    if (!xbmcGroup)
+      CLog::Log(LOGERROR, "PVR - %s - cannot find the channel group", __FUNCTION__);
+    else
+      xbmcGroup->UpdateFromClient(client, updateType, *channel);
+  }
+}
+
+void CAddonCallbacksPVR::PVRTransferChannelGroup(void *addonData, const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const PVR_CHANNEL_GROUP *group)
+{
+  PVR_CLIENT client;
+  // validate input
+  if (!addonData || !group)
+  {
+    CLog::Log(LOGERROR, "PVR - %s - invalid data", __FUNCTION__);
+  }
+  else if (strlen(group->strGroupName) == 0)
+  {
+    CLog::Log(LOGERROR, "PVR - %s - empty group name", __FUNCTION__);
+  }
+  // get the client
+  else if (!GetPVRClient(addonData, client))
+  {
+    CLog::Log(LOGERROR, "PVR - %s - invalid PVR client", __FUNCTION__);
+  }
+  // only process responses when not fully initialised
+  else if (!g_PVRManager.IsStarted() && updateType != PVR_UPDATE_RESPONSE)
+  {
+    return;
+  }
+  else
+  {
+    if (updateType != PVR_UPDATE_RESPONSE)
+      CLog::Log(LOGDEBUG, "PVR - %s - %s group '%s'", __FUNCTION__, ToString(updateType), group->strGroupName);
+
+    // get the groups container
+    CPVRChannelGroups *xbmcGroups(NULL);
+    if (handle && handle->dataAddress)
+      xbmcGroups = static_cast<CPVRChannelGroups *>(handle->dataAddress);
+    else
+      xbmcGroups = g_PVRChannelGroups->Get(group->bIsRadio);
+
+    // update
+    if (!xbmcGroups)
+      CLog::Log(LOGERROR, "PVR - %s - cannot find the groups container", __FUNCTION__);
+    else
+      xbmcGroups->UpdateFromClient(client, updateType, *group);
+  }
+}
+
+void CAddonCallbacksPVR::PVRTransferChannelGroupMember(void *addonData, const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const PVR_CHANNEL_GROUP_MEMBER *member)
+{
+  PVR_CLIENT client;
+  // validate input
+  if (!addonData || !member)
+  {
+    CLog::Log(LOGERROR, "PVR - %s - invalid data", __FUNCTION__);
+  }
+  else if (strlen(member->strGroupName) == 0)
+  {
+    CLog::Log(LOGERROR, "PVR - %s - empty group name", __FUNCTION__);
+  }
+  // get the client
+  else if (!GetPVRClient(addonData, client))
+  {
+    CLog::Log(LOGERROR, "PVR - %s - invalid PVR client", __FUNCTION__);
+  }
+  // only process responses when not fully initialised
+  else if (!g_PVRManager.IsStarted() && updateType != PVR_UPDATE_RESPONSE)
+  {
+    return;
+  }
+  else
+  {
+    if (updateType != PVR_UPDATE_RESPONSE)
+      CLog::Log(LOGDEBUG, "PVR - %s - %s group member %d in group '%s'", __FUNCTION__, ToString(updateType), member->iChannelUniqueId, member->strGroupName);
+
+    // get the group
+    CPVRChannelGroup *xbmcGroup(NULL);
+    if (handle && handle->dataAddress)
+      xbmcGroup = static_cast<CPVRChannelGroup *>(handle->dataAddress);
+    else
+      xbmcGroup = g_PVRChannelGroups->GetByNameFromAll(member->strGroupName);
+
+    // update
+    if (!xbmcGroup)
+      CLog::Log(LOGERROR, "PVR - %s - cannot find group '%s'", __FUNCTION__, member->strGroupName);
+    else
+      xbmcGroup->UpdateFromClient(client, updateType, *member);
+  }
+}
+
+void CAddonCallbacksPVR::PVRTransferEpgEntry(void *addonData, const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const EPG_TAG *epgentry)
+{
+  PVR_CLIENT client;
+  // validate input
+  if (!addonData || !epgentry)
+  {
+    CLog::Log(LOGERROR, "PVR - %s - invalid data", __FUNCTION__);
+  }
+  else if (strlen(epgentry->strTitle) == 0)
+  {
+    CLog::Log(LOGERROR, "PVR - %s - empty title", __FUNCTION__);
+  }
+  // get the client
+  else if (!GetPVRClient(addonData, client))
+  {
+    CLog::Log(LOGERROR, "PVR - %s - invalid PVR client", __FUNCTION__);
+  }
+  // only process responses when not fully initialised
+  else if (!g_PVRManager.IsStarted() && updateType != PVR_UPDATE_RESPONSE)
+  {
+    return;
+  }
+  else
+  {
+    if (updateType != PVR_UPDATE_RESPONSE)
+      CLog::Log(LOGDEBUG, "PVR - %s - %s epg entry '%s'", __FUNCTION__, ToString(updateType), epgentry->strTitle);
+
+    // get the epg container
+    CEpg *xbmcEpg(NULL);
+    if (handle && handle->dataAddress)
+      xbmcEpg = static_cast<CEpg *>(handle->dataAddress);
+    else
+    {
+      CPVRChannel *xbmcChannel = g_PVRChannelGroups->GetByUniqueID(epgentry->iChannelUniqueId, client->GetID());
+      xbmcEpg = xbmcChannel ? xbmcChannel->GetEPG() : NULL;
+    }
+
+    // update
+    if (!xbmcEpg)
+      CLog::Log(LOGERROR, "PVR - %s - cannot find the epg table", __FUNCTION__);
+    else
+      xbmcEpg->UpdateFromClient(client, updateType, *epgentry);
+  }
+}
+
+void CAddonCallbacksPVR::PVRTransferMenuHook(void *addonData, const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const PVR_MENUHOOK *hook)
+{
+  PVR_CLIENT client;
+  // validate input
+  if (!addonData || !hook)
+  {
+    CLog::Log(LOGERROR, "PVR - %s - invalid data", __FUNCTION__);
+  }
+  // get the client
+  else if (!GetPVRClient(addonData, client))
+  {
+    CLog::Log(LOGERROR, "PVR - %s - invalid PVR client", __FUNCTION__);
+  }
+  // only process responses when not fully initialised
+  else if (!g_PVRManager.IsStarted() && updateType != PVR_UPDATE_RESPONSE)
+  {
+    return;
+  }
+  else
+  {
+    client->UpdateMenuHook(updateType, *hook);
+  }
+}
+
+void CAddonCallbacksPVR::PVRTransferRecordingEntry(void *addonData, const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const PVR_RECORDING *recording)
+{
+  PVR_CLIENT client;
+  // validate input
+  if (!addonData || !recording)
+  {
+    CLog::Log(LOGERROR, "PVR - %s - invalid data", __FUNCTION__);
+  }
+  else if (strlen(recording->strTitle) == 0)
+  {
+    CLog::Log(LOGERROR, "PVR - %s - empty title", __FUNCTION__);
+  }
+  else if (strlen(recording->strStreamURL) == 0)
+  {
+    CLog::Log(LOGERROR, "PVR - %s - empty stream url", __FUNCTION__);
+  }
+  else if (strlen(recording->strRecordingId) == 0)
+  {
+    CLog::Log(LOGERROR, "PVR - %s - empty recording id", __FUNCTION__);
+  }
+  // get the client
+  else if (!GetPVRClient(addonData, client))
+  {
+    CLog::Log(LOGERROR, "PVR - %s - invalid PVR client", __FUNCTION__);
+  }
+  // only process responses when not fully initialised
+  else if (!g_PVRManager.IsStarted() && updateType != PVR_UPDATE_RESPONSE)
+  {
+    return;
+  }
+  else
+  {
+    if (updateType != PVR_UPDATE_RESPONSE)
+      CLog::Log(LOGDEBUG, "PVR - %s - %s recording '%s'", __FUNCTION__, ToString(updateType), recording->strTitle);
+
+    // get the recordings container
+    CPVRRecordings *xbmcRecordings(NULL);
+    if (handle && handle->dataAddress)
+      xbmcRecordings = static_cast<CPVRRecordings *>(handle->dataAddress);
+    else
+      xbmcRecordings = g_PVRRecordings;
+
+    // update
+    if (!xbmcRecordings)
+      CLog::Log(LOGERROR, "PVR - %s - cannot find the recordings container", __FUNCTION__);
+    else
+      xbmcRecordings->UpdateFromClient(client, updateType, *recording);
+  }
+}
+
+void CAddonCallbacksPVR::PVRTransferTimerEntry(void *addonData, const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const PVR_TIMER *timer)
+{
+  PVR_CLIENT client;
+  // validate input
+  if (!addonData || !timer)
+  {
+    CLog::Log(LOGERROR, "PVR - %s - invalid data", __FUNCTION__);
+  }
+  // get the client
+  else if (!GetPVRClient(addonData, client))
+  {
+    CLog::Log(LOGERROR, "PVR - %s - invalid PVR client", __FUNCTION__);
+  }
+  // only process responses when not fully initialised
+  else if (!g_PVRManager.IsStarted() && updateType != PVR_UPDATE_RESPONSE)
+  {
+    return;
+  }
+  else
+  {
+    if (updateType != PVR_UPDATE_RESPONSE)
+      CLog::Log(LOGDEBUG, "PVR - %s - %s timer '%s'", __FUNCTION__, ToString(updateType), timer->strTitle);
+
+    // get the timers container
+    CPVRTimers *xbmcTimers(NULL);
+    if (handle && handle->dataAddress)
+      xbmcTimers = static_cast<CPVRTimers *>(handle->dataAddress);
+    else
+      xbmcTimers = g_PVRTimers;
+
+    // update
+    if (!xbmcTimers)
+      CLog::Log(LOGERROR, "PVR - %s - cannot find the timers container", __FUNCTION__);
+    else
+      xbmcTimers->UpdateFromClient(client, updateType, *timer);
+  }
+}
+
+void CAddonCallbacksPVR::PVRRecording(void *addonData, const char *strName, const char *strFileName, bool bOnOff)
+{
+  PVR_CLIENT client;
+  // validate input
+  if (!addonData || !strName || !strFileName)
+  {
+    CLog::Log(LOGERROR, "PVR - %s - invalid data", __FUNCTION__);
+  }
+  // get the client
+  else if (!GetPVRClient(addonData, client))
+  {
+    CLog::Log(LOGERROR, "PVR - %s - invalid PVR client", __FUNCTION__);
+  }
+  else
+  {
+    CStdString strLine1;
+    if (bOnOff)
+      strLine1.Format(g_localizeStrings.Get(19197), client->Name());
+    else
+      strLine1.Format(g_localizeStrings.Get(19198), client->Name());
+
+    CStdString strLine2;
+    if (strName)
+      strLine2 = strName;
+    else if (strFileName)
+      strLine2 = strFileName;
+
+    /* display a notification for 5 seconds */
+    CGUIDialogKaiToast::QueueNotification(CGUIDialogKaiToast::Info, strLine1, strLine2, 5000, false);
+
+    CLog::Log(LOGDEBUG, "CAddonCallbacksPVR - %s - recording %s on client '%s'. name='%s' filename='%s'",
+        __FUNCTION__, bOnOff ? "started" : "finished", client->Name().c_str(), strName, strFileName);
+  }
+}
+
+const char *CAddonCallbacksPVR::ToString(const PVR_UPDATE_TYPE updateType)
+{
+  switch (updateType)
+  {
+  case PVR_UPDATE_DELETE:
+    return "delete";
+  case PVR_UPDATE_NEW:
+    return "new";
+  case PVR_UPDATE_REPLACE:
+    return "replace";
+  case PVR_UPDATE_RESPONSE:
+    return "response";
+  default:
+    return "unknown";
+  }
+}

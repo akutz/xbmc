@@ -111,6 +111,15 @@ CPVRChannelGroup *CPVRChannelGroupsContainer::GetByIdFromAll(int iGroupId) const
   return group;
 }
 
+CPVRChannelGroup *CPVRChannelGroupsContainer::GetByNameFromAll(const CStdString &strGroupName) const
+{
+  CPVRChannelGroup *group = m_groupsRadio->GetByName(strGroupName);
+  if (!group)
+    group = m_groupsTV->GetByName(strGroupName);
+
+  return group;
+}
+
 CPVRChannel *CPVRChannelGroupsContainer::GetChannelById(int iChannelId) const
 {
   CPVRChannel *channel = m_groupsTV->GetGroupAll()->GetByChannelID(iChannelId);

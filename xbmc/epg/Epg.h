@@ -31,6 +31,7 @@
 
 namespace PVR
 {
+  class CPVRClient;
   class CPVRChannel;
 }
 
@@ -280,13 +281,8 @@ namespace EPG
      */
     static const CStdString &ConvertGenreIdToString(int iID, int iSubID);
 
-    /*!
-     * @brief Update an entry in this EPG.
-     * @param data The tag to update.
-     * @param bUpdateDatabase If set to true, this event will be persisted in the database.
-     * @return True if it was updated successfully, false otherwise.
-     */
-    virtual bool UpdateEntry(const EPG_TAG *data, bool bUpdateDatabase = false);
+    virtual bool UpdateFromClient(boost::shared_ptr<PVR::CPVRClient> &client, const PVR_UPDATE_TYPE updateType, const EPG_TAG &entry);
+    virtual bool DeleteEntry(const EPG_TAG &data);
 
     /*!
      * @return True if this is an EPG table for a radio channel, false otherwise.

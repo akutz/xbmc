@@ -72,7 +72,7 @@ bool CGUIDialogPVRGuideInfo::ActionStartTimer(const CEpgInfoTag *tag)
     {
       Close();
       CPVRTimerInfoTag *newTimer = CPVRTimerInfoTag::CreateFromEpg(*tag);
-      bReturn = CPVRTimers::AddTimer(*newTimer);
+      bReturn = newTimer->AddToClient();
       delete newTimer;
     }
   }
@@ -98,7 +98,7 @@ bool CGUIDialogPVRGuideInfo::ActionCancelTimer(const CPVRTimerInfoTag *tag)
     if (pDialog->IsConfirmed())
     {
       Close();
-      bReturn = CPVRTimers::DeleteTimer(*tag);
+      bReturn = CPVRTimerInfoTag::DeleteTimerFromClient(*tag);
     }
   }
 

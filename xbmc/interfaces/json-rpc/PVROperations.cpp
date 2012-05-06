@@ -192,7 +192,7 @@ JSONRPC_STATUS CPVROperations::ScheduleRecording(const CStdString &method, ITran
       if (bCreated)
       {
         CLog::Log(LOGDEBUG, "JSONRPC: recording scheduled");
-        bAdded = CPVRTimers::AddTimer(*newTimer);
+        bAdded = newTimer->AddToClient();
       }
       else
       {

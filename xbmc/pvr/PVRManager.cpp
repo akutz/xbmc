@@ -599,7 +599,7 @@ bool CPVRManager::ToggleRecordingOnChannel(unsigned int iChannelId)
     /* timers are supported on this channel */
     if (!channel->IsRecording())
     {
-      CPVRTimerInfoTag *newTimer = m_timers->InstantTimer(channel);
+      CPVRTimerInfoTag *newTimer = m_timers->CreateInstantTimer(channel);
       if (!newTimer)
         CGUIDialogOK::ShowAndGetInput(19033,0,19164,0);
       else
@@ -628,7 +628,7 @@ bool CPVRManager::StartRecordingOnPlayingChannel(bool bOnOff)
     /* timers are supported on this channel */
     if (bOnOff && !channel.IsRecording())
     {
-      CPVRTimerInfoTag *newTimer = m_timers->InstantTimer(&channel);
+      CPVRTimerInfoTag *newTimer = m_timers->CreateInstantTimer(&channel);
       if (!newTimer)
         CGUIDialogOK::ShowAndGetInput(19033,0,19164,0);
       else
@@ -730,7 +730,7 @@ bool CPVRRecordingsUpdateJob::DoWork(void)
 
 bool CPVRTimersUpdateJob::DoWork(void)
 {
-  return g_PVRTimers->Update();
+  return g_PVRTimers->RefreshTimers();
 }
 
 bool CPVRChannelsUpdateJob::DoWork(void)

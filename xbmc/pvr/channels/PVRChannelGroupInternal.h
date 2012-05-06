@@ -25,6 +25,7 @@
 
 namespace PVR
 {
+  class CPVRClient;
   class CPVRChannelGroups;
   class CPVRDatabase;
 
@@ -73,13 +74,6 @@ namespace PVR
     virtual bool InsertInGroup(CPVRChannel &channel, int iChannelNumber = 0, bool bSortAndRenumber = true);
 
     /*!
-     * @brief Callback for add-ons to update a channel.
-     * @param channel The updated channel.
-     * @return True if the channel has been updated succesfully, false otherwise.
-     */
-    virtual bool UpdateFromClient(const CPVRChannel &channel);
-
-    /*!
      * @see CPVRChannelGroup::IsGroupMember
      */
     virtual bool IsGroupMember(const CPVRChannel &channel) const;
@@ -115,6 +109,8 @@ namespace PVR
      * @return True if all tables were created successfully, false otherwise.
      */
     virtual bool CreateChannelEpgs(bool bForce = false);
+
+    virtual bool UpdateFromClient(boost::shared_ptr<CPVRClient> &client, const PVR_UPDATE_TYPE &updateType, const PVR_CHANNEL &channel);
 
   protected:
     /*!

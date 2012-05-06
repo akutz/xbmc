@@ -34,6 +34,7 @@ namespace EPG
 
 namespace PVR
 {
+  class CPVRClient;
   class CGUIDialogPVRTimerSettings;
 
   class CPVRTimers : public Observer,
@@ -57,13 +58,14 @@ namespace PVR
     /**
      * @brief refresh the channel list from the clients.
      */
-    bool Update(void);
+    bool RefreshTimers(void);
 
     /**
      * Update a timer entry in this container.
      */
     bool UpdateEntry(const CPVRTimerInfoTag &timer);
-    bool UpdateFromClient(const CPVRTimerInfoTag &timer) { return UpdateEntry(timer); }
+
+    void UpdateFromClient(boost::shared_ptr<CPVRClient> &client, const PVR_UPDATE_TYPE &updateType, const PVR_TIMER &timer);
 
     /********** getters **********/
 
@@ -72,15 +74,19 @@ namespace PVR
      */
     int GetTimers(CFileItemList* results);
 
+    int GetTimers(std::vector<CPVRTimerInfoTag *> &results, bool bActiveOnly = false, bool bRecordingOnly = false, int iOnChannelUID = -1, int iOnClientID = -1) const;
+
+    static int AddToFileItemList(const std::vector<CPVRTimerInfoTag *> &in, CFileItemList &out);
+
     /**
      * The timer that will be active next.
      * Returns false if there is none.
      */
     bool GetNextActiveTimer(CPVRTimerInfoTag *tag) const;
 
-    int GetActiveTimers(std::vector<CPVRTimerInfoTag *> *tags) const;
+    int GetActiveTimers(std::vector<CPVRTimerInfoTag *> &tags) const;
 
-    int GetActiveRecordings(std::vector<CPVRTimerInfoTag *> *tags) const;
+    int GetActiveRecordings(std::vector<CPVRTimerInfoTag *> &tags) const;
     /**
      * The amount of timers in this container.
      */
@@ -119,77 +125,23 @@ namespace PVR
      * @param bStartTimer True to start the timer instantly, false otherwise.
      * @return The new timer or NULL if it couldn't be created.
      */
-    CPVRTimerInfoTag *InstantTimer(CPVRChannel *channel, bool bStartTimer = true);
+    CPVRTimerInfoTag *CreateInstantTimer(CPVRChannel *channel, bool bStartTimer = true);
 
     /*!
      * @return Next event time (timer or daily wake up)
      */
     CDateTime GetNextEventTime(void) const;
 
-    /********** static methods **********/
-
-    /**
-     * Add a timer to the client.
-     * True if it was sent correctly, false if not.
-     */
-    static bool AddTimer(const CFileItem &item);
-
-    /**
-     * Add a timer to the client.
-     * True if it was sent correctly, false if not.
-     */
-    static bool AddTimer(CPVRTimerInfoTag &item);
-
-    /**
-     * Delete a timer on the client.
-     * True if it was sent correctly, false if not.
-     */
-    static bool DeleteTimer(const CFileItem &item, bool bForce = false);
-
-    /**
-     * Delete a timer on the client.
-     * True if it was sent correctly, false if not.
-     */
-    static bool DeleteTimer(CPVRTimerInfoTag &item, bool bForce = false);
-
-    /**
-     * Rename a timer on the client.
-     * True if it was sent correctly, false if not.
-     */
-    static bool RenameTimer(CFileItem &item, const CStdString &strNewName);
-
-    /**
-     * Rename a timer on the client.
-     * True if it was sent correctly, false if not.
-     */
-    static bool RenameTimer(CPVRTimerInfoTag &item, const CStdString &strNewName);
-
-    /**
-     * Get updated timer information from the client.
-     * True if it was requested correctly, false if not.
-     */
-    static bool UpdateTimer(const CFileItem &item);
-
-    /**
-     * Get updated timer information from the client.
-     * True if it was requested correctly, false if not.
-     */
-    static bool UpdateTimer(CPVRTimerInfoTag &item);
-
     bool IsRecording(void);
-    bool UpdateEntries(CPVRTimers *timers);
-    CPVRTimerInfoTag *GetByClient(int iClientId, int iClientTimerId);
+    CPVRTimerInfoTag *GetByClient(int iClientId, int iClientTimerId) const;
     CPVRTimerInfoTag *GetMatch(const EPG::CEpgInfoTag *Epg);
     CPVRTimerInfoTag *GetMatch(const CFileItem *item);
     virtual void Notify(Observable *obs, const CStdString& msg);
     bool IsRecordingOnChannel(const CPVRChannel &channel) const;
 
   private:
-    /*!
-     * @brief Add timers to this container.
-     * @return The amount of timers that were added.
-     */
-    int LoadFromClients(void);
+    void AddEntriesFrom(const CPVRTimers &timers, std::vector<CStdString> &timerNotifications);
+    void RemoveEntriesNotIn(const CPVRTimers &timers, std::vector<CStdString> &timerNotifications);
 
     CCriticalSection                                       m_critSection;
     bool                                                   m_bIsUpdating;

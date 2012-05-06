@@ -174,40 +174,29 @@ typedef struct CB_GUILib
 
 } CB_GUILib;
 
-typedef void (*PVRTransferEpgEntry)(void *userData, const ADDON_HANDLE handle, const EPG_TAG *epgentry);
-typedef void (*PVRTransferChannelEntry)(void *userData, const ADDON_HANDLE handle, const PVR_CHANNEL *chan);
-typedef void (*PVRTransferTimerEntry)(void *userData, const ADDON_HANDLE handle, const PVR_TIMER *timer);
-typedef void (*PVRTransferRecordingEntry)(void *userData, const ADDON_HANDLE handle, const PVR_RECORDING *recording);
-typedef void (*PVRAddMenuHook)(void *addonData, PVR_MENUHOOK *hook);
-typedef void (*PVRRecording)(void *addonData, const char *Name, const char *FileName, bool On);
-typedef void (*PVRTriggerChannelUpdate)(void *addonData);
-typedef void (*PVRTriggerTimerUpdate)(void *addonData);
-typedef void (*PVRTriggerRecordingUpdate)(void *addonData);
-typedef void (*PVRTriggerChannelGroupsUpdate)(void *addonData);
-
-typedef void (*PVRTransferChannelGroup)(void *addonData, const ADDON_HANDLE handle, const PVR_CHANNEL_GROUP *group);
-typedef void (*PVRTransferChannelGroupMember)(void *addonData, const ADDON_HANDLE handle, const PVR_CHANNEL_GROUP_MEMBER *member);
-
-typedef void (*PVRFreeDemuxPacket)(void *addonData, DemuxPacket* pPacket);
-typedef DemuxPacket* (*PVRAllocateDemuxPacket)(void *addonData, int iDataSize);
+typedef DemuxPacket* (*PVRAllocateDemuxPacket)       (void *addonData, int iDataSize);
+typedef void         (*PVRFreeDemuxPacket)           (void *addonData, DemuxPacket* pPacket);
+typedef void         (*PVRTransferChannelEntry)      (void *addonData, const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const PVR_CHANNEL *chan);
+typedef void         (*PVRTransferChannelGroup)      (void *addonData, const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const PVR_CHANNEL_GROUP *group);
+typedef void         (*PVRTransferChannelGroupMember)(void *addonData, const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const PVR_CHANNEL_GROUP_MEMBER *member);
+typedef void         (*PVRTransferEpgEntry)          (void *addonData, const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const EPG_TAG *epgentry);
+typedef void         (*PVRTransferMenuHook)          (void *addonData, const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const PVR_MENUHOOK *hook);
+typedef void         (*PVRTransferRecordingEntry)    (void *addonData, const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const PVR_RECORDING *recording);
+typedef void         (*PVRTransferTimerEntry)        (void *addonData, const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const PVR_TIMER *timer);
+typedef void         (*PVRRecording)                 (void *addonData, const char *Name, const char *FileName, bool On);//TODO
 
 typedef struct CB_PVRLib
 {
-  PVRTransferEpgEntry           TransferEpgEntry;
-  PVRTransferChannelEntry       TransferChannelEntry;
-  PVRTransferTimerEntry         TransferTimerEntry;
-  PVRTransferRecordingEntry     TransferRecordingEntry;
-  PVRAddMenuHook                AddMenuHook;
-  PVRRecording                  Recording;
-  PVRTriggerChannelUpdate       TriggerChannelUpdate;
-  PVRTriggerTimerUpdate         TriggerTimerUpdate;
-  PVRTriggerRecordingUpdate     TriggerRecordingUpdate;
-  PVRTriggerChannelGroupsUpdate TriggerChannelGroupsUpdate;
-  PVRFreeDemuxPacket            FreeDemuxPacket;
   PVRAllocateDemuxPacket        AllocateDemuxPacket;
+  PVRFreeDemuxPacket            FreeDemuxPacket;
+  PVRTransferChannelEntry       TransferChannelEntry;
   PVRTransferChannelGroup       TransferChannelGroup;
   PVRTransferChannelGroupMember TransferChannelGroupMember;
-
+  PVRTransferEpgEntry           TransferEpgEntry;
+  PVRTransferMenuHook           TransferMenuHook;
+  PVRTransferRecordingEntry     TransferRecordingEntry;
+  PVRTransferTimerEntry         TransferTimerEntry;
+  PVRRecording                  Recording;
 } CB_PVRLib;
 
 

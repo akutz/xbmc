@@ -378,6 +378,7 @@ bool CEpg::UpdateEntry(const CEpgInfoTag &tag, bool bUpdateDatabase /* = false *
   infoTag->m_iPVRChannelID     = m_iPVRChannelId;
   infoTag->m_strTableName      = m_strName;
 
+  SetChanged();
   if (bUpdateDatabase)
     bReturn = infoTag->Persist();
   else
@@ -891,13 +892,20 @@ const CStdString &CEpg::ConvertGenreIdToString(int iID, int iSubID)
   return g_localizeStrings.Get(iLabelId);
 }
 
-bool CEpg::UpdateEntry(const EPG_TAG *data, bool bUpdateDatabase /* = false */)
+bool CEpg::DeleteEntry(const EPG_TAG &data)
 {
-  if (!data)
-    return false;
-
-  CEpgInfoTag tag(*data);
-  return UpdateEntry(tag, bUpdateDatabase);
+  CSingleLock lock(m_critSection);
+  for (map<CDateTime, CEpgInfoTag *>::const_iterator it = m_tags.begin(); it != m_tags.end(); it++)
+  {
+    if (it->second->m_iBroadcastId == (int)data.iUniqueBroadcastId)
+    {
+      SetChanged();
+      m_tags.erase(it->first);
+      break;
+    }
+  }
+  FixOverlappingEvents(true);
+  return true;
 }
 
 bool CEpg::IsRadio(void) const
@@ -1000,4 +1008,21 @@ bool CEpg::UpdatePending(void) const
 {
   CSingleLock lock(m_critSection);
   return m_bUpdatePending;
+}
+
+bool CEpg::UpdateFromClient(PVR::PVR_CLIENT &client, const PVR_UPDATE_TYPE updateType, const EPG_TAG &entry)
+{
+  if (updateType == PVR_UPDATE_NEW || updateType == PVR_UPDATE_REPLACE || updateType == PVR_UPDATE_RESPONSE)
+  {
+    CEpgInfoTag tag(entry);
+    if (UpdateEntry(tag, updateType != PVR_UPDATE_RESPONSE))
+      NotifyObservers();
+  }
+  else if (updateType == PVR_UPDATE_DELETE)
+  {
+    DeleteEntry(entry);
+    NotifyObservers();
+    return true;
+  }
+  return false;
 }

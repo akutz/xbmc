@@ -366,7 +366,7 @@ bool CGUIWindowPVRCommon::ActionDeleteTimer(CFileItem *item)
     return false;
 
   /* delete the timer */
-  return g_PVRTimers->DeleteTimer(*item);
+  return CPVRTimerInfoTag::DeleteTimerFromClient(*item);
 }
 
 bool CGUIWindowPVRCommon::ShowNewTimerDialog(void)
@@ -378,7 +378,7 @@ bool CGUIWindowPVRCommon::ShowNewTimerDialog(void)
   if (ShowTimerSettings(newItem))
   {
     /* Add timer to backend */
-    bReturn = g_PVRTimers->AddTimer(*newItem);
+    bReturn = CPVRTimerInfoTag::CreateTimerOnClient(*newItem);
   }
 
   delete newItem;
@@ -403,7 +403,7 @@ bool CGUIWindowPVRCommon::ActionShowTimer(CFileItem *item)
     if (ShowTimerSettings(item))
     {
       /* Update timer on pvr backend */
-      bReturn = g_PVRTimers->UpdateTimer(*item);
+      bReturn = CPVRTimerInfoTag::UpdateTimerOnClient(*item);
     }
   }
 
@@ -442,7 +442,7 @@ bool CGUIWindowPVRCommon::ActionRecord(CFileItem *item)
     CPVRTimerInfoTag *newtimer = CPVRTimerInfoTag::CreateFromEpg(*epgTag);
     CFileItem *item = new CFileItem(*newtimer);
 
-    bReturn = g_PVRTimers->AddTimer(*item);
+    bReturn = CPVRTimerInfoTag::CreateTimerOnClient(*item);
   }
   else
   {
@@ -732,7 +732,7 @@ bool CGUIWindowPVRCommon::StartRecordFile(CFileItem *item)
   CPVRTimerInfoTag *newtimer = CPVRTimerInfoTag::CreateFromEpg(*tag);
   CFileItem *newTimerItem = new CFileItem(*newtimer);
 
-  return g_PVRTimers->AddTimer(*newTimerItem);
+  return CPVRTimerInfoTag::CreateTimerOnClient(*newTimerItem);
 }
 
 bool CGUIWindowPVRCommon::StopRecordFile(CFileItem *item)
@@ -748,7 +748,7 @@ bool CGUIWindowPVRCommon::StopRecordFile(CFileItem *item)
   if (!timer || timer->m_bIsRepeating)
     return false;
 
-  return g_PVRTimers->DeleteTimer(*timer);
+  return timer->DeleteFromClient();
 }
 
 void CGUIWindowPVRCommon::ShowEPGInfo(CFileItem *item)

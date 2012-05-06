@@ -97,16 +97,52 @@ void CPVRChannelGroupInternal::Unload()
   CPVRChannelGroup::Unload();
 }
 
-bool CPVRChannelGroupInternal::UpdateFromClient(const CPVRChannel &channel)
+bool CPVRChannelGroupInternal::UpdateFromClient(PVR_CLIENT &client, const PVR_UPDATE_TYPE &updateType, const PVR_CHANNEL &channel)
 {
-  CSingleLock lock(m_critSection);
-  CPVRChannel *realChannel = (CPVRChannel *) GetByClient(channel.UniqueID(), channel.ClientID());
-  if (realChannel != NULL)
-    realChannel->UpdateFromClient(channel);
-  else
-    realChannel = new CPVRChannel(channel);
+  if (channel.bIsRadio != IsRadio())
+    return false;
 
-  return CPVRChannelGroup::AddToGroup(*realChannel, 0, false);
+  if (updateType == PVR_UPDATE_NEW || PVR_UPDATE_RESPONSE || PVR_UPDATE_REPLACE)
+  {
+    CPVRChannel *existingChannel(NULL);
+
+    {
+      CSingleLock lock(m_critSection);
+      // try to get an existing channel tag
+      existingChannel = GetByClient(channel.iUniqueId, client->GetID());
+      if (existingChannel)
+      {
+        // update this tag
+        existingChannel->UpdateFromClient(client, updateType, channel);
+      }
+      else
+      {
+        // create a new tag
+        CLog::Log(LOGDEBUG, "PVR - %s - new channel: '%s'", __FUNCTION__, channel.strChannelName);
+        existingChannel = new CPVRChannel(channel, client->GetID());
+      }
+    }
+
+    // register as group member
+    return CPVRChannelGroup::AddToGroup(*existingChannel, channel.iChannelNumber, false);
+  }
+  else if (updateType == PVR_UPDATE_DELETE)
+  {
+    // find the channel
+    CPVRChannel *existingChannel = GetByClient(channel.iUniqueId, client->GetID());
+    if (existingChannel)
+    {
+      // unregister group member
+      CPVRChannelGroup::RemoveFromGroup(*existingChannel);
+
+      // delete the channel
+      existingChannel->Delete();
+      delete existingChannel;
+    }
+    return true;
+  }
+
+  return false;
 }
 
 bool CPVRChannelGroupInternal::InsertInGroup(CPVRChannel &channel, int iChannelNumber /* = 0 */, bool bSortAndRenumber /* = true */)
@@ -129,7 +165,7 @@ bool CPVRChannelGroupInternal::UpdateTimers(void)
 
   /* update the timers with the new channel numbers */
   vector<CPVRTimerInfoTag *> timers;
-  g_PVRTimers->GetActiveTimers(&timers);
+  g_PVRTimers->GetActiveTimers(timers);
 
   for (unsigned int ptr = 0; ptr < timers.size(); ptr++)
   {
@@ -184,7 +220,7 @@ bool CPVRChannelGroupInternal::RemoveFromGroup(const CPVRChannel &channel)
   }
 
   /* get the actual channel since this is called from a fileitemlist copy */
-  CPVRChannel *realChannel = (CPVRChannel *) GetByChannelID(channel.ChannelID());
+  CPVRChannel *realChannel = GetByChannelID(channel.ChannelID());
   if (!realChannel)
     return false;
 

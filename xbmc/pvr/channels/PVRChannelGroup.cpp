@@ -149,6 +149,7 @@ void CPVRChannelGroup::Unload(void)
 
 bool CPVRChannelGroup::Update(void)
 {
+  // don't update this group from the backend
   if (GroupType() == PVR_GROUP_TYPE_USER_DEFINED)
     return false;
 
@@ -713,6 +714,7 @@ bool CPVRChannelGroup::RemoveFromGroup(const CPVRChannel &channel)
       erase(begin() + iChannelPtr);
       bReturn = true;
       m_bChanged = true;
+      SetChanged();
       break;
     }
   }
@@ -742,6 +744,7 @@ bool CPVRChannelGroup::AddToGroup(CPVRChannel &channel, int iChannelNumber /* = 
       PVRChannelGroupMember newMember = { realChannel, iChannelNumber };
       push_back(newMember);
       m_bChanged = true;
+      SetChanged();
 
       if (bSortAndRenumber)
       {
@@ -1065,4 +1068,26 @@ int CPVRChannelGroup::GetEPGAll(CFileItemList &results)
   }
 
   return results.Size() - iInitialSize;
+}
+
+bool CPVRChannelGroup::UpdateFromClient(PVR_CLIENT &client, const PVR_UPDATE_TYPE &updateType, const PVR_CHANNEL_GROUP_MEMBER &member)
+{
+  CPVRChannel *channel = GetByClient(member.iChannelUniqueId, client->GetID());
+
+  if (channel && channel->IsRadio() == IsRadio())
+  {
+    if (updateType == PVR_UPDATE_NEW || PVR_UPDATE_RESPONSE || PVR_UPDATE_REPLACE)
+    {
+      AddToGroup(*channel, member.iChannelNumber);
+      NotifyObservers();
+      return true;
+    }
+    else if (updateType == PVR_UPDATE_DELETE)
+    {
+      RemoveFromGroup(*channel);
+      NotifyObservers();
+      return true;
+    }
+  }
+  return false;
 }

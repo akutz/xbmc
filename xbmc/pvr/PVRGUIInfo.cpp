@@ -760,7 +760,7 @@ void CPVRGUIInfo::UpdateTimersToggle(void)
   if (m_iRecordingTimerAmount > 0)
   {
     vector<CPVRTimerInfoTag *> activeTags;
-    g_PVRTimers->GetActiveRecordings(&activeTags);
+    g_PVRTimers->GetActiveRecordings(activeTags);
     if (activeTags.at(m_iTimerInfoToggleCurrent) != 0)
     {
       strActiveTimerTitle.Format("%s",       activeTags.at(m_iTimerInfoToggleCurrent)->m_strTitle);

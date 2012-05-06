@@ -478,7 +478,7 @@ namespace PVR
 
     void Notify(Observable *obs, const CStdString& msg);
 
-    bool GetClient(const CStdString &strId, ADDON::AddonPtr &addon) const;
+    bool GetClient(const CStdString &strId, PVR_CLIENT &addon) const;
 
     bool GetPlayingClient(PVR_CLIENT &client) const;
 
@@ -490,6 +490,7 @@ namespace PVR
     bool SupportsChannelGroups(int iClientId) const;
     bool SupportsChannelScan(int iClientId) const;
     bool SupportsRecordingFolders(int iClientId) const;
+    bool SupportsRecordingPlaycount(int iClientId) const;
     bool HandlesInputStream(int iClientId) const;
     bool HandlesDemuxing(int iClientId) const;
   private:

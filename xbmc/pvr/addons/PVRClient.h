@@ -148,6 +148,8 @@ namespace PVR
      */
     PVR_MENUHOOKS *GetMenuHooks(void);
 
+    void UpdateMenuHook(const PVR_UPDATE_TYPE &updateType, const PVR_MENUHOOK &hook);
+
     /*!
      * @brief Call one of the menu hooks of this client.
      * @param hook The hook to call.
@@ -418,6 +420,7 @@ namespace PVR
     bool SupportsChannelGroups(void) const;
     bool SupportsChannelScan(void) const;
     bool SupportsRecordingFolders(void) const;
+    bool SupportsRecordingPlaycount(void) const;
     bool HandlesInputStream(void) const;
     bool HandlesDemuxing(void) const;
 

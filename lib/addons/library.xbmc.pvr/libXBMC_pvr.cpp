@@ -66,116 +66,65 @@ DLLEXPORT void PVR_unregister_me()
     m_Handle->PVRLib_UnRegisterMe(m_Handle->addonData, m_cb);
 }
 
-DLLEXPORT void PVR_transfer_epg_entry(const ADDON_HANDLE handle, const EPG_TAG *epgentry)
+DLLEXPORT DemuxPacket* PVR_allocate_demux_packet(int iDataSize)
 {
-  if (m_cb == NULL)
-    return;
-
-  m_cb->TransferEpgEntry(m_Handle->addonData, handle, epgentry);
-}
-
-DLLEXPORT void PVR_transfer_channel_entry(const ADDON_HANDLE handle, const PVR_CHANNEL *chan)
-{
-  if (m_cb == NULL)
-    return;
-
-  m_cb->TransferChannelEntry(m_Handle->addonData, handle, chan);
-}
-
-DLLEXPORT void PVR_transfer_timer_entry(const ADDON_HANDLE handle, const PVR_TIMER *timer)
-{
-  if (m_cb == NULL)
-    return;
-
-  m_cb->TransferTimerEntry(m_Handle->addonData, handle, timer);
-}
-
-DLLEXPORT void PVR_transfer_recording_entry(const ADDON_HANDLE handle, const PVR_RECORDING *recording)
-{
-  if (m_cb == NULL)
-    return;
-
-  m_cb->TransferRecordingEntry(m_Handle->addonData, handle, recording);
-}
-
-DLLEXPORT void PVR_add_menu_hook(PVR_MENUHOOK *hook)
-{
-  if (m_cb == NULL)
-    return;
-
-  m_cb->AddMenuHook(m_Handle->addonData, hook);
-}
-
-DLLEXPORT void PVR_recording(const char *Name, const char *FileName, bool On)
-{
-  if (m_cb == NULL)
-    return;
-
-  m_cb->Recording(m_Handle->addonData, Name, FileName, On);
-}
-
-DLLEXPORT void PVR_trigger_channel_update()
-{
-  if (m_cb == NULL)
-    return;
-
-  m_cb->TriggerChannelUpdate(m_Handle->addonData);
-}
-
-DLLEXPORT void PVR_trigger_channel_groups_update()
-{
-  if (m_cb == NULL)
-    return;
-
-  m_cb->TriggerChannelGroupsUpdate(m_Handle->addonData);
-}
-
-DLLEXPORT void PVR_trigger_timer_update()
-{
-  if (m_cb == NULL)
-    return;
-
-  m_cb->TriggerTimerUpdate(m_Handle->addonData);
-}
-
-DLLEXPORT void PVR_trigger_recording_update()
-{
-  if (m_cb == NULL)
-    return;
-
-  m_cb->TriggerRecordingUpdate(m_Handle->addonData);
+  if (m_Handle && m_cb)
+    return m_cb->AllocateDemuxPacket(m_Handle->addonData, iDataSize);
+  return NULL;
 }
 
 DLLEXPORT void PVR_free_demux_packet(DemuxPacket* pPacket)
 {
-  if (m_cb == NULL)
-    return;
-
-  m_cb->FreeDemuxPacket(m_Handle->addonData, pPacket);
+  if (m_Handle && m_cb)
+    m_cb->FreeDemuxPacket(m_Handle->addonData, pPacket);
 }
 
-DLLEXPORT DemuxPacket* PVR_allocate_demux_packet(int iDataSize)
+DLLEXPORT void PVR_transfer_channel_entry(const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const PVR_CHANNEL *chan)
 {
-  if (m_cb == NULL)
-    return NULL;
-
-  return m_cb->AllocateDemuxPacket(m_Handle->addonData, iDataSize);
+  if (m_Handle && m_cb)
+    m_cb->TransferChannelEntry(m_Handle->addonData, handle, updateType, chan);
 }
 
-DLLEXPORT void PVR_transfer_channel_group(const ADDON_HANDLE handle, const PVR_CHANNEL_GROUP *group)
+DLLEXPORT void PVR_transfer_channel_group(const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const PVR_CHANNEL_GROUP *group)
 {
-  if (m_cb == NULL)
-    return;
-
-  m_cb->TransferChannelGroup(m_Handle->addonData, handle, group);
+  if (m_Handle && m_cb)
+    m_cb->TransferChannelGroup(m_Handle->addonData, handle, updateType, group);
 }
 
-DLLEXPORT void PVR_transfer_channel_group_member(const ADDON_HANDLE handle, const PVR_CHANNEL_GROUP_MEMBER *member)
+DLLEXPORT void PVR_transfer_channel_group_member(const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const PVR_CHANNEL_GROUP_MEMBER *member)
 {
-  if (m_cb == NULL)
-    return;
+  if (m_Handle && m_cb)
+    m_cb->TransferChannelGroupMember(m_Handle->addonData, handle, updateType, member);
+}
 
-  m_cb->TransferChannelGroupMember(m_Handle->addonData, handle, member);
+DLLEXPORT void PVR_transfer_epg_entry(const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const EPG_TAG *epgentry)
+{
+  if (m_Handle && m_cb)
+    m_cb->TransferEpgEntry(m_Handle->addonData, handle, updateType, epgentry);
+}
+
+DLLEXPORT void PVR_transfer_menu_hook(const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, PVR_MENUHOOK *hook)
+{
+  if (m_Handle && m_cb)
+    m_cb->TransferMenuHook(m_Handle->addonData, handle, updateType, hook);
+}
+
+DLLEXPORT void PVR_transfer_recording_entry(const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const PVR_RECORDING *recording)
+{
+  if (m_Handle && m_cb)
+    m_cb->TransferRecordingEntry(m_Handle->addonData, handle, updateType, recording);
+}
+
+DLLEXPORT void PVR_transfer_timer_entry(const ADDON_HANDLE handle, const PVR_UPDATE_TYPE updateType, const PVR_TIMER *timer)
+{
+  if (m_Handle && m_cb)
+    m_cb->TransferTimerEntry(m_Handle->addonData, handle, updateType, timer);
+}
+
+DLLEXPORT void PVR_recording(const char *Name, const char *FileName, bool On)
+{
+  if (m_Handle && m_cb)
+    m_cb->Recording(m_Handle->addonData, Name, FileName, On);
 }
 
 };

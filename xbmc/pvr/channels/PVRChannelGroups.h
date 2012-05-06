@@ -30,6 +30,7 @@
 
 namespace PVR
 {
+  class CPVRClient;
   class CPVRChannelGroupsContainer;
 
   /** A container class for channel groups */
@@ -64,7 +65,8 @@ namespace PVR
      * @return True if the group was added or update successfully, false otherwise.
      */
     bool Update(const CPVRChannelGroup &group, bool bSaveInDb = false);
-    bool UpdateFromClient(const CPVRChannelGroup &group);
+
+    virtual bool UpdateFromClient(boost::shared_ptr<CPVRClient> &client, const PVR_UPDATE_TYPE &updateType, const PVR_CHANNEL_GROUP &group);
 
     /*!
      * @brief Get a pointer to a channel group given it's ID.
@@ -138,7 +140,7 @@ namespace PVR
      * @param strName The name of the group.
      * @return True if the group was added, false otherwise.
      */
-    bool AddGroup(const CStdString &strName);
+    bool AddGroup(const CStdString &strName, bool bPersist = true);
 
     /*!
      * @brief Delete a group in this container.

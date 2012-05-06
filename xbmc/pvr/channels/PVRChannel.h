@@ -34,6 +34,7 @@ namespace EPG
 
 namespace PVR
 {
+  class CPVRClient;
   class CPVRChannelGroup;
   class CPVRChannelGroupInternal;
   class CPVRDatabase;
@@ -118,6 +119,8 @@ namespace PVR
      * @param channel The new channel data.
      * @return True if something changed, false otherwise.
      */
+    bool UpdateFromClient(boost::shared_ptr<CPVRClient> &client, const PVR_UPDATE_TYPE &updateType, const PVR_CHANNEL &channel);
+
     bool UpdateFromClient(const CPVRChannel &channel);
 
     /*!

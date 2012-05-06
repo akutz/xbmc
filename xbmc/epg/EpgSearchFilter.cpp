@@ -218,7 +218,7 @@ int EpgSearchFilter::FilterTimers(CFileItemList &results)
     return iRemoved;
 
   vector<CPVRTimerInfoTag *> timers;
-  g_PVRTimers->GetActiveTimers(&timers);
+  g_PVRTimers->GetActiveTimers(timers);
 
   // TODO not thread safe and inefficient!
   for (unsigned int iTimerPtr = 0; iTimerPtr < timers.size(); iTimerPtr++)

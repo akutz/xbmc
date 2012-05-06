@@ -1123,7 +1123,7 @@ void CPVRClients::Notify(Observable *obs, const CStdString& msg)
   UpdateAndInitialiseClients();
 }
 
-bool CPVRClients::GetClient(const CStdString &strId, ADDON::AddonPtr &addon) const
+bool CPVRClients::GetClient(const CStdString &strId, PVR_CLIENT &addon) const
 {
   CSingleLock lock(m_critSection);
   for (PVR_CLIENTMAP_CITR itr = m_clientMap.begin(); itr != m_clientMap.end(); itr++)
@@ -1204,6 +1204,14 @@ bool CPVRClients::SupportsRecordingFolders(int iClientId) const
   PVR_CLIENT client;
   if (GetConnectedClient(iClientId, client))
     return client->SupportsRecordingFolders();
+  return false;
+}
+
+bool CPVRClients::SupportsRecordingPlaycount(int iClientId) const
+{
+  PVR_CLIENT client;
+  if (GetConnectedClient(iClientId, client))
+    return client->SupportsRecordingPlaycount();
   return false;
 }
 

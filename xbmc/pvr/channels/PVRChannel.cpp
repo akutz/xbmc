@@ -193,17 +193,39 @@ CEpg *CPVRChannel::GetEPG(void) const
 bool CPVRChannel::UpdateFromClient(const CPVRChannel &channel)
 {
   SetClientID(channel.ClientID());
-  SetClientChannelNumber(channel.ClientChannelNumber());
+  SetClientChannelNumber(channel.ChannelNumber());
   SetInputFormat(channel.InputFormat());
   SetStreamURL(channel.StreamURL());
   SetEncryptionSystem(channel.EncryptionSystem());
-  SetClientChannelName(channel.ClientChannelName());
+  SetClientChannelName(channel.ChannelName());
 
   CSingleLock lock(m_critSection);
   if (m_strChannelName.IsEmpty())
-    SetChannelName(channel.ClientChannelName());
-  if (m_strIconPath.IsEmpty()||(!m_strIconPath.Equals(channel.IconPath()) && !IsUserSetIcon()))
+    SetChannelName(channel.ChannelName());
+  if (m_strIconPath.IsEmpty() ||
+     (!m_strIconPath.Equals(channel.IconPath()) && !IsUserSetIcon()))
     SetIconPath(channel.IconPath(), false, false);
+
+  return m_bChanged;
+}
+
+bool CPVRChannel::UpdateFromClient(PVR_CLIENT &client, const PVR_UPDATE_TYPE &updateType, const PVR_CHANNEL &channel)
+{
+  CLog::Log(LOGDEBUG, "PVR - %s - updating channel: '%s'", __FUNCTION__, ChannelName().c_str());
+
+  SetClientID(client->GetID());
+  SetClientChannelNumber(channel.iChannelNumber);
+  SetInputFormat(channel.strInputFormat);
+  SetStreamURL(channel.strStreamURL);
+  SetEncryptionSystem(channel.iEncryptionSystem);
+  SetClientChannelName(channel.strChannelName);
+
+  CSingleLock lock(m_critSection);
+  if (m_strChannelName.IsEmpty())
+    SetChannelName(channel.strChannelName);
+  if (m_strIconPath.IsEmpty() ||
+     (!m_strIconPath.Equals(channel.strIconPath) && !IsUserSetIcon()))
+    SetIconPath(channel.strIconPath, false, false);
 
   return m_bChanged;
 }

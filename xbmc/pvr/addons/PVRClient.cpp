@@ -61,21 +61,22 @@ void CPVRClient::ResetProperties(int iClientId /* = PVR_INVALID_CLIENT_ID */)
   /* initialise members */
   if (m_pInfo)
     SAFE_DELETE(m_pInfo);
-  m_pInfo                 = new PVR_PROPERTIES;
-  CStdString userpath     = CSpecialProtocol::TranslatePath(Profile());
-  m_pInfo->strUserPath    = userpath.c_str();
-  CStdString clientpath   = CSpecialProtocol::TranslatePath(Path());
-  m_pInfo->strClientPath  = clientpath.c_str();
+  m_pInfo                  = new PVR_PROPERTIES;
+  CStdString userpath      = CSpecialProtocol::TranslatePath(Profile());
+  m_pInfo->strUserPath     = userpath.c_str();
+  CStdString clientpath    = CSpecialProtocol::TranslatePath(Path());
+  m_pInfo->strClientPath   = clientpath.c_str();
+  m_pInfo->callbackAddress = this;
 
   m_menuhooks.clear();
-  m_bReadyToUse           = false;
-  m_iClientId             = iClientId;
-  m_strBackendVersion     = DEFAULT_INFO_STRING_VALUE;
-  m_strConnectionString   = DEFAULT_INFO_STRING_VALUE;
-  m_strFriendlyName       = DEFAULT_INFO_STRING_VALUE;
-  m_strBackendName        = DEFAULT_INFO_STRING_VALUE;
-  m_bIsPlayingTV          = false;
-  m_bIsPlayingRecording   = false;
+  m_bReadyToUse            = false;
+  m_iClientId              = iClientId;
+  m_strBackendVersion      = DEFAULT_INFO_STRING_VALUE;
+  m_strConnectionString    = DEFAULT_INFO_STRING_VALUE;
+  m_strFriendlyName        = DEFAULT_INFO_STRING_VALUE;
+  m_strBackendName         = DEFAULT_INFO_STRING_VALUE;
+  m_bIsPlayingTV           = false;
+  m_bIsPlayingRecording    = false;
   ResetAddonCapabilities(m_addonCapabilities);
 }
 
@@ -600,7 +601,7 @@ PVR_ERROR CPVRClient::SetRecordingPlayCount(const CPVRRecording &recording, int 
   try
   {
     PVR_RECORDING tag;
-    PVRWriteClientRecordingInfo(recording, tag);
+    WriteClientRecordingInfo(recording, tag);
 
     retVal = m_pStruct->SetRecordingPlayCount(tag, count);
 
@@ -627,7 +628,7 @@ PVR_ERROR CPVRClient::SetRecordingLastPlayedPosition(const CPVRRecording &record
   try
   {
     PVR_RECORDING tag;
-    PVRWriteClientRecordingInfo(recording, tag);
+    WriteClientRecordingInfo(recording, tag);
 
     retVal = m_pStruct->SetRecordingLastPlayedPosition(tag, lastplayedposition);
 
@@ -654,7 +655,7 @@ int CPVRClient::GetRecordingLastPlayedPosition(const CPVRRecording &recording)
   try
   {
     PVR_RECORDING tag;
-    PVRWriteClientRecordingInfo(recording, tag);
+    WriteClientRecordingInfo(recording, tag);
 
     iReturn = m_pStruct->GetRecordingLastPlayedPosition(tag);
   }
@@ -1084,6 +1085,37 @@ PVR_MENUHOOKS *CPVRClient::GetMenuHooks(void)
   return ReadyToUse() ? &m_menuhooks : NULL;
 }
 
+void CPVRClient::UpdateMenuHook(const PVR_UPDATE_TYPE &updateType, const PVR_MENUHOOK &hook)
+{
+  CSingleLock lock(m_critSection);
+  if (ReadyToUse())
+  {
+    if (updateType == PVR_UPDATE_NEW || updateType == PVR_UPDATE_REPLACE || updateType == PVR_UPDATE_RESPONSE)
+    {
+      for (unsigned int iPtr = 0; iPtr < m_menuhooks.size(); iPtr++)
+      {
+        if (m_menuhooks[iPtr].iHookId == hook.iHookId)
+        {
+          m_menuhooks[iPtr].iLocalizedStringId = hook.iLocalizedStringId;
+          return;
+        }
+      }
+      m_menuhooks.push_back(hook);
+    }
+    else if (updateType == PVR_UPDATE_DELETE)
+    {
+      for (unsigned int iPtr = 0; iPtr < m_menuhooks.size(); iPtr++)
+      {
+        if (m_menuhooks[iPtr].iHookId == hook.iHookId)
+        {
+          m_menuhooks.erase(m_menuhooks.begin() + iPtr);
+          break;
+        }
+      }
+    }
+  }
+}
+
 const char *CPVRClient::ToString(const PVR_ERROR error)
 {
   switch (error)
@@ -1183,6 +1215,12 @@ bool CPVRClient::SupportsRecordingFolders(void) const
 {
   CSingleLock lock(m_critSection);
   return m_addonCapabilities.bSupportsRecordingFolders;
+}
+
+bool CPVRClient::SupportsRecordingPlaycount(void) const
+{
+  CSingleLock lock(m_critSection);
+  return m_addonCapabilities.bSupportsRecordingPlayCount;
 }
 
 bool CPVRClient::HandlesInputStream(void) const

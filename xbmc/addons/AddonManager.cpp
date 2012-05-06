@@ -404,7 +404,7 @@ bool CAddonMgr::GetAddons(const TYPE &type, VECADDONS &addons, bool enabled /* =
     {
       if (bIsPVRAddon && g_PVRManager.IsStarted())
       {
-        AddonPtr pvrAddon;
+        PVR_CLIENT pvrAddon;
         if (g_PVRClients->GetClient(props->plugin->identifier, pvrAddon))
         {
           addons.push_back(pvrAddon);
@@ -440,7 +440,7 @@ bool CAddonMgr::GetAddon(const CStdString &str, AddonPtr &addon, const TYPE &typ
 
       if (addon->Type() == ADDON_PVRDLL && g_PVRManager.IsStarted())
       {
-        AddonPtr pvrAddon;
+        PVR_CLIENT pvrAddon;
         if (g_PVRClients->GetClient(addon->ID(), pvrAddon))
           addon = pvrAddon;
       }

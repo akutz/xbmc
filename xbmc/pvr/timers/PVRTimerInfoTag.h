@@ -69,29 +69,9 @@ namespace PVR
     friend class EPG::CEpgInfoTag;
 
   public:
-    CStdString            m_strTitle;           /*!< @brief name of this timer */
-    CStdString            m_strDirectory;       /*!< @brief directory where the recording must be stored */
-    CStdString            m_strSummary;         /*!< @brief summary string with the time to show inside a GUI list */
-    PVR_TIMER_STATE       m_state;              /*!< @brief the state of this timer */
-    int                   m_iClientId;          /*!< @brief ID of the backend */
-    int                   m_iClientIndex;       /*!< @brief index number of the tag, given by the backend, -1 for new */
-    int                   m_iClientChannelUid;  /*!< @brief channel uid */
-    int                   m_iPriority;          /*!< @brief priority of the timer */
-    int                   m_iLifetime;          /*!< @brief lifetime of the timer in days */
-    bool                  m_bIsRepeating;       /*!< @brief repeating timer if true, use the m_FirstDay and repeat flags */
-    int                   m_iWeekdays;          /*!< @brief bit based store of weekdays to repeat */
-    CStdString            m_strFileNameAndPath; /*!< @brief filename is only for reference */
-    int                   m_iChannelNumber;     /*!< @brief integer value of the channel number */
-    bool                  m_bIsRadio;           /*!< @brief is radio channel if set */
-    const CPVRChannel *   m_channel;
-    unsigned int          m_iMarginStart;       /*!< @brief (optional) if set, the backend starts the recording iMarginStart minutes before startTime. */
-    unsigned int          m_iMarginEnd;         /*!< @brief (optional) if set, the backend ends the recording iMarginEnd minutes after endTime. */
-    std::vector<std::string> m_genre;           /*!< @brief genre of the timer */
-    int                   m_iGenreType;         /*!< @brief genre type of the timer */
-    int                   m_iGenreSubType;      /*!< @brief genre subtype of the timer */
-
     CPVRTimerInfoTag(void);
     CPVRTimerInfoTag(const PVR_TIMER &timer, CPVRChannel *channel, unsigned int iClientId);
+    CPVRTimerInfoTag(const CPVRTimerInfoTag &tag);
     virtual ~CPVRTimerInfoTag(void);
 
     void Reset();
@@ -114,6 +94,8 @@ namespace PVR
     void SetEpgInfoTag(EPG::CEpgInfoTag *tag);
     EPG::CEpgInfoTag *GetEpgInfoTag(void) const;
 
+    int ClientID(void) const;
+    int ChannelUID(void) const;
     int ChannelNumber(void) const;
     CStdString ChannelName(void) const;
     CStdString ChannelIcon(void) const;
@@ -164,6 +146,51 @@ namespace PVR
     bool DeleteFromClient(bool bForce = false);
     bool RenameOnClient(const CStdString &strNewName);
     bool UpdateOnClient();
+
+    /**
+     * Add a timer to the client.
+     * True if it was sent correctly, false if not.
+     */
+    static bool CreateTimerOnClient(const CFileItem &item);
+
+    /**
+     * Delete a timer on the client.
+     * True if it was sent correctly, false if not.
+     */
+    static bool DeleteTimerFromClient(const CFileItem &item, bool bForce = false);
+
+    /**
+     * Rename a timer on the client.
+     * True if it was sent correctly, false if not.
+     */
+    static bool RenameTimerOnClient(CFileItem &item, const CStdString &strNewName);
+
+    /**
+     * Get updated timer information from the client.
+     * True if it was requested correctly, false if not.
+     */
+    static bool UpdateTimerOnClient(const CFileItem &item);
+
+    CStdString            m_strTitle;           /*!< @brief name of this timer */
+    CStdString            m_strDirectory;       /*!< @brief directory where the recording must be stored */
+    CStdString            m_strSummary;         /*!< @brief summary string with the time to show inside a GUI list */
+    PVR_TIMER_STATE       m_state;              /*!< @brief the state of this timer */
+    int                   m_iClientId;          /*!< @brief ID of the backend */
+    int                   m_iClientIndex;       /*!< @brief index number of the tag, given by the backend, -1 for new */
+    int                   m_iClientChannelUid;  /*!< @brief channel uid */
+    int                   m_iPriority;          /*!< @brief priority of the timer */
+    int                   m_iLifetime;          /*!< @brief lifetime of the timer in days */
+    bool                  m_bIsRepeating;       /*!< @brief repeating timer if true, use the m_FirstDay and repeat flags */
+    int                   m_iWeekdays;          /*!< @brief bit based store of weekdays to repeat */
+    CStdString            m_strFileNameAndPath; /*!< @brief filename is only for reference */
+    int                   m_iChannelNumber;     /*!< @brief integer value of the channel number */
+    bool                  m_bIsRadio;           /*!< @brief is radio channel if set */
+    const CPVRChannel *   m_channel;
+    unsigned int          m_iMarginStart;       /*!< @brief (optional) if set, the backend starts the recording iMarginStart minutes before startTime. */
+    unsigned int          m_iMarginEnd;         /*!< @brief (optional) if set, the backend ends the recording iMarginEnd minutes after endTime. */
+    std::vector<std::string> m_genre;           /*!< @brief genre of the timer */
+    int                   m_iGenreType;         /*!< @brief genre type of the timer */
+    int                   m_iGenreSubType;      /*!< @brief genre subtype of the timer */
 
   protected:
     /*!

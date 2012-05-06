@@ -28,6 +28,8 @@
 
 namespace PVR
 {
+  class CPVRClient;
+
   class CPVRRecordings : public std::vector<CPVRRecording *>,
                          public Observable
   {
@@ -51,8 +53,9 @@ namespace PVR
     int Load();
     void Unload();
     void Clear();
-    void UpdateEntry(const CPVRRecording &tag);
-    void UpdateFromClient(const CPVRRecording &tag) { UpdateEntry(tag); }
+    void UpdateFromClient(boost::shared_ptr<CPVRClient> &client, const PVR_UPDATE_TYPE &updateType, const PVR_RECORDING &recording);
+    CPVRRecording *GetByClient(int iClientId, const char *strRecordingId);
+    bool DeleteRecording(const CPVRRecording &recording);
 
     /**
      * @brief refresh the recordings list from the clients.

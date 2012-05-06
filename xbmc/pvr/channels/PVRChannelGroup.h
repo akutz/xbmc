@@ -39,6 +39,7 @@ namespace PVR
 #define PVR_GROUP_TYPE_INTERNAL     1
 #define PVR_GROUP_TYPE_USER_DEFINED 2
 
+  class CPVRClient;
   class CPVRChannelGroups;
   class CPVRChannelGroupInternal;
 
@@ -382,6 +383,8 @@ namespace PVR
      * @return The amount of entries that were added.
      */
     virtual int GetEPGNext(CFileItemList &results);
+
+    virtual bool UpdateFromClient(boost::shared_ptr<CPVRClient> &client, const PVR_UPDATE_TYPE &updateType, const PVR_CHANNEL_GROUP_MEMBER &member);
 
   protected:
     /*!

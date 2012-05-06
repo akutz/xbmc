@@ -68,13 +68,32 @@ bool CPVRChannelGroups::GetGroupsFromClients(void)
   return UpdateGroupsEntries(groupsTmp);
 }
 
-bool CPVRChannelGroups::UpdateFromClient(const CPVRChannelGroup &group)
+bool CPVRChannelGroups::UpdateFromClient(PVR_CLIENT &client, const PVR_UPDATE_TYPE &updateType, const PVR_CHANNEL_GROUP &group)
 {
-  CSingleLock lock(m_critSection);
-  CPVRChannelGroup *newGroup = new CPVRChannelGroup(group.IsRadio(), 0, group.GroupName());
-  push_back(newGroup);
+  if (group.bIsRadio != IsRadio())
+    return false;
 
-  return true;
+  // don't process updates when not a response and channel group syncing is disabled
+  if (!g_guiSettings.GetBool("pvrmanager.syncchannelgroups") && updateType != PVR_UPDATE_RESPONSE)
+    return true;
+
+  if (updateType == PVR_UPDATE_NEW || PVR_UPDATE_RESPONSE || PVR_UPDATE_REPLACE)
+  {
+    AddGroup(group.strGroupName);
+    return true;
+  }
+  else if (updateType == PVR_UPDATE_DELETE)
+  {
+    // delete this group
+    CPVRChannelGroup *deletedGroup = GetByName(group.strGroupName);
+    if (deletedGroup && !deletedGroup->IsInternalGroup())
+    {
+      DeleteGroup(*deletedGroup);
+      return true;
+    }
+  }
+
+  return false;
 }
 
 bool CPVRChannelGroups::Update(const CPVRChannelGroup &group, bool bSaveInDb)
@@ -412,19 +431,19 @@ void CPVRChannelGroups::SetSelectedGroup(CPVRChannelGroup *group)
   group->Renumber();
 }
 
-bool CPVRChannelGroups::AddGroup(const CStdString &strName)
+bool CPVRChannelGroups::AddGroup(const CStdString &strName, bool bPersist /* = true */)
 {
-  bool bReturn = false;
+  bool bReturn(false);
   CSingleLock lock(m_critSection);
 
-  CPVRChannelGroup *group = (CPVRChannelGroup *) GetByName(strName);
+  CPVRChannelGroup *group = GetByName(strName);
   if (!group)
   {
     group = new CPVRChannelGroup(m_bRadio);
     group->SetGroupName(strName);
     push_back(group);
 
-    bReturn = group->Persist();
+    bReturn = bPersist ? group->Persist() : true;
   }
   else
   {

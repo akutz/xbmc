@@ -112,6 +112,8 @@ namespace PVR
      */
     virtual CPVRChannelGroup *GetByIdFromAll(int iGroupId) const;
 
+    virtual CPVRChannelGroup *GetByNameFromAll(const CStdString &strGroupName) const;
+
     /*!
      * @brief Get a channel given it's database ID.
      * @param iChannelId The ID of the channel.
