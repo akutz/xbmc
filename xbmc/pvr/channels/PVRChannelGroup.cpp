@@ -1076,7 +1076,7 @@ bool CPVRChannelGroup::UpdateFromClient(PVR_CLIENT &client, const PVR_UPDATE_TYP
 
   if (channel && channel->IsRadio() == IsRadio())
   {
-    if (updateType == PVR_UPDATE_NEW || PVR_UPDATE_RESPONSE || PVR_UPDATE_REPLACE)
+    if (updateType == PVR_UPDATE_NEW || updateType == PVR_UPDATE_RESPONSE || updateType == PVR_UPDATE_REPLACE)
     {
       AddToGroup(*channel, member.iChannelNumber);
       NotifyObservers();

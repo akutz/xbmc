@@ -198,7 +198,7 @@ void CPVRTimers::UpdateFromClient(PVR_CLIENT &client, const PVR_UPDATE_TYPE &upd
   if (channel)
   {
     CPVRTimerInfoTag tag(timer, channel, client->GetID());
-    if (updateType == PVR_UPDATE_NEW || PVR_UPDATE_RESPONSE || PVR_UPDATE_REPLACE)
+    if (updateType == PVR_UPDATE_NEW || updateType == PVR_UPDATE_RESPONSE || updateType == PVR_UPDATE_REPLACE)
     {
       CPVRChannel *channel = g_PVRChannelGroups->GetByClientFromAll(client->GetID(), timer.iClientChannelUid);
       if (!channel)

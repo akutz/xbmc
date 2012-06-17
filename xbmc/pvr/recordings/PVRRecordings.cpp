@@ -433,7 +433,7 @@ void CPVRRecordings::Clear()
 
 void CPVRRecordings::UpdateFromClient(PVR_CLIENT &client, const PVR_UPDATE_TYPE &updateType, const PVR_RECORDING &recording)
 {
-  if (updateType == PVR_UPDATE_NEW || PVR_UPDATE_RESPONSE || PVR_UPDATE_REPLACE)
+  if (updateType == PVR_UPDATE_NEW || updateType == PVR_UPDATE_RESPONSE || updateType == PVR_UPDATE_REPLACE)
   {
     CSingleLock lock(m_critSection);
     CPVRRecording *tag = GetByClient(client->GetID(), recording.strRecordingId);

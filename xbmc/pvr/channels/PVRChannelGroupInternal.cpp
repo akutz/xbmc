@@ -102,7 +102,7 @@ bool CPVRChannelGroupInternal::UpdateFromClient(PVR_CLIENT &client, const PVR_UP
   if (channel.bIsRadio != IsRadio())
     return false;
 
-  if (updateType == PVR_UPDATE_NEW || PVR_UPDATE_RESPONSE || PVR_UPDATE_REPLACE)
+  if (updateType == PVR_UPDATE_NEW || updateType == PVR_UPDATE_RESPONSE || updateType == PVR_UPDATE_REPLACE)
   {
     CPVRChannel *existingChannel(NULL);
 
